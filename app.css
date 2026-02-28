@@ -1,0 +1,41 @@
+/* App.css */
+.app-container {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.issue-section input {
+  width: 70%;
+  padding: 8px;
+  margin-right: 5px;
+}
+
+.issue-section button {
+  padding: 8px 12px;
+}
+
+.chat-log {
+  border: 1px solid #ddd;
+  padding: 10px;
+  height: 300px;
+  overflow-y: auto;
+  margin: 20px 0;
+  background: #f9f9f9;
+}
+
+.chat-tech {
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+.chat-ai {
+  text-align: left;
+  margin-bottom: 8px;
+  color: #0077ff;
+}
+
+.evidence-section input {
+  margin-top: 10px;
+}
