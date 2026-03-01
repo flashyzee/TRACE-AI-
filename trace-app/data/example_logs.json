@@ -1,0 +1,101 @@
+[
+  {
+    "log_id": "LOG-001",
+    "timestamp": "2024-03-15T09:23:41Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "triage_agent",
+    "fault_code": "P0191",
+    "inputs": {
+      "fault_code": "P0191",
+      "symptoms": "rough idle, black smoke, hard cold start"
+    },
+    "output": {
+      "top_cause": "Weak lift pump",
+      "confidence": 0.72,
+      "model": "llama3.1"
+    },
+    "confidence": 0.72,
+    "human_approved": false,
+    "model_used": "llama3.1",
+    "notes": "Initial triage -- sent to evidence collection"
+  },
+  {
+    "log_id": "LOG-002",
+    "timestamp": "2024-03-15T09:24:18Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "evidence_agent",
+    "fault_code": "P0191",
+    "inputs": {
+      "fuel_pressure_psi": "Under 500 PSI",
+      "miles_since_filter": "Over 15,000 mi",
+      "visible_leak": "No leak visible",
+      "cold_start_issue": "Yes, hard cold start"
+    },
+    "output": {
+      "updated_confidence": 0.87,
+      "evidence_complete": true
+    },
+    "confidence": 0.87,
+    "human_approved": false,
+    "model_used": "llama3.1",
+    "notes": "Evidence confirmed pump weakness -- confidence raised to 87%"
+  },
+  {
+    "log_id": "LOG-003",
+    "timestamp": "2024-03-15T09:24:52Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "escalation_agent",
+    "fault_code": "P0191",
+    "inputs": {
+      "confidence": 0.87,
+      "estimated_cost_usd": 850,
+      "urgency": "high"
+    },
+    "output": {
+      "requires_human_approval": true,
+      "reason": "Estimated repair cost $850 exceeds $500 threshold"
+    },
+    "confidence": 0.87,
+    "human_approved": null,
+    "model_used": "llama3.1",
+    "notes": "Escalated to back-office -- cost threshold exceeded"
+  },
+  {
+    "log_id": "LOG-004",
+    "timestamp": "2024-03-15T09:31:05Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "human_approval",
+    "fault_code": "P0191",
+    "inputs": {
+      "repair_id": "REP-1000",
+      "action": "approve"
+    },
+    "output": {
+      "approved": true,
+      "approved_by": "Eng_Johnson"
+    },
+    "confidence": 0.87,
+    "human_approved": true,
+    "model_used": "N/A",
+    "notes": "Senior engineer Eng_Johnson approved repair at 09:31 AM"
+  },
+  {
+    "log_id": "LOG-005",
+    "timestamp": "2024-03-15T09:31:08Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "resolution_agent",
+    "fault_code": "P0191",
+    "inputs": {
+      "cause": "Weak lift pump",
+      "approved": true
+    },
+    "output": {
+      "repair_steps_generated": true,
+      "steps_count": 10
+    },
+    "confidence": 0.87,
+    "human_approved": true,
+    "model_used": "llama3.1",
+    "notes": "Repair steps delivered to tech. Total resolution time: 7 min 27 sec"
+  }
+]

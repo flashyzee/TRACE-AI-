@@ -1,0 +1,101 @@
+repair_id,timestamp,tech_id,fault_code,symptoms,ai_diagnosis,confidence,evidence_collected,escalated,approved_by,outcome,resolution_time_hours,model_used
+REP-1000,2024-01-01T10:00:00,TechB_002,P0234,excessive fuel consumption,Wastegate actuator failure,0.56,yes,True,Eng_Johnson,parts_ordered,1.0,llama3.1
+REP-1001,2024-01-04T16:00:00,TechA_001,P0191,stalling at low RPM,Fuel rail pressure sensor failure,0.59,yes,True,Eng_Martinez,parts_ordered,2.8,llama3.1
+REP-1002,2024-01-07T13:00:00,TechC_003,P0234,"check engine light, idling rough",Boost pressure sensor,0.89,yes,True,Eng_Martinez,resolved,5.8,llama3.1
+REP-1003,2024-01-10T12:00:00,TechE_005,P0191,"check engine light, idling rough",Fuel rail pressure sensor failure,0.71,yes,False,,resolved,4.5,mistral
+REP-1004,2024-01-13T17:00:00,TechE_005,P0191,"check engine light, idling rough",Injector return leak,0.58,yes,True,Eng_Martinez,resolved,0.8,llama3.1
+REP-1005,2024-01-16T13:00:00,TechC_003,P0087,engine hesitation under load,Fuel pump failure,0.91,yes,False,,resolved,1.4,llama3.1
+REP-1006,2024-01-19T08:00:00,TechE_005,P0191,excessive fuel consumption,Clogged fuel filter,0.84,yes,False,,resolved,3.4,llama3.1
+REP-1007,2024-01-22T17:00:00,TechE_005,P0191,hard start and low power,Injector return leak,0.71,yes,False,,resolved,5.1,llama3.1
+REP-1008,2024-01-25T08:00:00,TechB_002,P0191,stalling at low RPM,Fuel rail pressure sensor failure,0.89,yes,False,,resolved,1.7,llama3.1
+REP-1009,2024-01-28T10:00:00,TechE_005,P0087,stalling at low RPM,Fuel pressure regulator,0.74,yes,False,,resolved,4.6,llama3.1
+REP-1010,2024-01-31T09:00:00,TechE_005,P0234,engine hesitation under load,Boost pressure sensor,0.7,yes,False,,resolved,4.7,llama3.1
+REP-1011,2024-02-03T08:00:00,TechD_004,P0191,engine hesitation under load,Weak lift pump,0.88,yes,False,,parts_ordered,6.0,mistral
+REP-1012,2024-02-06T17:00:00,TechE_005,P0087,"check engine light, idling rough",Fuel pressure regulator,0.91,yes,True,Eng_Williams,resolved,2.1,llama3.1
+REP-1013,2024-02-09T11:00:00,TechE_005,P0087,hard start and low power,Fuel pump failure,0.95,yes,False,,parts_ordered,5.5,mistral
+REP-1014,2024-02-12T09:00:00,TechE_005,P0087,stalling at low RPM,Fuel pressure regulator,0.76,yes,True,Eng_Johnson,parts_ordered,2.3,llama3.1
+REP-1015,2024-02-15T11:00:00,TechB_002,P0191,rough idle and black smoke,Clogged fuel filter,0.92,yes,False,,resolved,5.3,llama3.1
+REP-1016,2024-02-18T15:00:00,TechB_002,P0191,hard start and low power,Injector return leak,0.89,yes,False,,escalated_resolved,5.7,llama3.1
+REP-1017,2024-02-21T10:00:00,TechE_005,P0087,excessive fuel consumption,Fuel pressure regulator,0.92,yes,False,,resolved,4.4,llama3.1
+REP-1018,2024-02-24T14:00:00,TechA_001,P0234,hard start and low power,Boost hose leak,0.71,yes,False,,resolved,0.9,llama3.1
+REP-1019,2024-02-27T08:00:00,TechA_001,P0234,hard start and low power,Boost hose leak,0.65,yes,True,Eng_Johnson,resolved,5.2,llama3.1
+REP-1020,2024-03-01T15:00:00,TechB_002,P0234,excessive fuel consumption,Wastegate actuator failure,0.67,yes,True,Eng_Chen,resolved,4.8,llama3.1
+REP-1021,2024-03-04T13:00:00,TechD_004,P0191,engine hesitation under load,Fuel rail pressure sensor failure,0.59,yes,True,Eng_Johnson,resolved,0.8,mistral
+REP-1022,2024-03-07T14:00:00,TechB_002,P0087,engine hesitation under load,Fuel pump failure,0.65,yes,True,Eng_Martinez,resolved,3.0,llama3.1
+REP-1023,2024-03-10T15:00:00,TechA_001,P0087,rough idle and black smoke,Fuel pressure regulator,0.59,yes,True,Eng_Martinez,resolved,2.7,llama3.1
+REP-1024,2024-03-13T13:00:00,TechC_003,P0191,engine hesitation under load,Injector return leak,0.93,yes,True,Eng_Williams,escalated_resolved,4.3,mistral
+REP-1025,2024-03-16T07:00:00,TechE_005,P0234,excessive fuel consumption,Boost hose leak,0.85,yes,True,Eng_Johnson,resolved,0.8,mistral
+REP-1026,2024-03-19T07:00:00,TechE_005,P0087,rough idle and black smoke,Fuel pressure regulator,0.94,yes,False,,resolved,0.9,llama3.1
+REP-1027,2024-03-22T16:00:00,TechB_002,P0234,stalling at low RPM,Wastegate actuator failure,0.72,yes,False,,parts_ordered,0.7,llama3.1
+REP-1028,2024-03-25T11:00:00,TechB_002,P0087,excessive fuel consumption,Fuel pressure regulator,0.8,yes,False,,resolved,1.8,llama3.1
+REP-1029,2024-03-28T08:00:00,TechA_001,P0191,engine hesitation under load,Clogged fuel filter,0.74,yes,False,,parts_ordered,6.0,llama3.1
+REP-1030,2024-03-31T12:00:00,TechA_001,P0191,hard start and low power,Wiring connector corrosion,0.64,yes,True,Eng_Williams,resolved,1.4,mistral
+REP-1031,2024-04-03T17:00:00,TechE_005,P0234,rough idle and black smoke,Boost pressure sensor,0.81,yes,False,,parts_ordered,2.1,mistral
+REP-1032,2024-04-06T15:00:00,TechB_002,P0191,"check engine light, idling rough",Weak lift pump,0.66,yes,True,Eng_Williams,parts_ordered,1.7,llama3.1
+REP-1033,2024-04-09T07:00:00,TechA_001,P0191,excessive fuel consumption,Clogged fuel filter,0.76,yes,False,,escalated_resolved,5.1,llama3.1
+REP-1034,2024-04-12T11:00:00,TechB_002,P0191,excessive fuel consumption,Clogged fuel filter,0.87,yes,False,,escalated_resolved,3.5,llama3.1
+REP-1035,2024-04-15T09:00:00,TechE_005,P0234,rough idle and black smoke,Wastegate actuator failure,0.6,yes,True,,resolved,3.7,llama3.1
+REP-1036,2024-04-18T07:00:00,TechC_003,P0087,hard start and low power,Fuel pump failure,0.57,yes,True,Eng_Martinez,resolved,2.4,mistral
+REP-1037,2024-04-21T10:00:00,TechB_002,P0087,hard start and low power,Fuel pressure regulator,0.86,yes,False,,escalated_resolved,0.6,mistral
+REP-1038,2024-04-24T10:00:00,TechC_003,P0087,hard start and low power,Blocked fuel filter,0.89,yes,False,,resolved,2.6,llama3.1
+REP-1039,2024-04-27T12:00:00,TechC_003,P0087,hard start and low power,Fuel pump failure,0.63,yes,True,,resolved,0.6,llama3.1
+REP-1040,2024-04-30T11:00:00,TechC_003,P0087,excessive fuel consumption,Blocked fuel filter,0.67,yes,True,Eng_Chen,parts_ordered,2.3,llama3.1
+REP-1041,2024-05-03T11:00:00,TechA_001,P0191,rough idle and black smoke,Clogged fuel filter,0.62,yes,True,,parts_ordered,2.9,mistral
+REP-1042,2024-05-06T13:00:00,TechE_005,P0087,hard start and low power,Blocked fuel filter,0.8,yes,False,,resolved,0.7,llama3.1
+REP-1043,2024-05-09T17:00:00,TechB_002,P0191,"check engine light, idling rough",Wiring connector corrosion,0.94,yes,False,,escalated_resolved,0.9,mistral
+REP-1044,2024-05-12T11:00:00,TechE_005,P0087,"check engine light, idling rough",Fuel pressure regulator,0.68,yes,True,Eng_Chen,resolved,2.7,llama3.1
+REP-1045,2024-05-15T13:00:00,TechB_002,P0234,stalling at low RPM,Wastegate actuator failure,0.63,yes,True,Eng_Williams,escalated_resolved,3.5,llama3.1
+REP-1046,2024-05-18T16:00:00,TechC_003,P0087,engine hesitation under load,Blocked fuel filter,0.64,yes,True,Eng_Chen,escalated_resolved,4.2,mistral
+REP-1047,2024-05-21T15:00:00,TechE_005,P0087,"check engine light, idling rough",Fuel pressure regulator,0.62,yes,True,Eng_Johnson,resolved,4.2,llama3.1
+REP-1048,2024-05-24T14:00:00,TechE_005,P0191,rough idle and black smoke,Weak lift pump,0.56,yes,True,Eng_Chen,escalated_resolved,5.4,mistral
+REP-1049,2024-05-27T07:00:00,TechA_001,P0191,engine hesitation under load,Injector return leak,0.76,yes,True,Eng_Martinez,resolved,4.9,mistral
+REP-1050,2024-05-30T08:00:00,TechD_004,P0234,hard start and low power,Boost pressure sensor,0.57,yes,True,Eng_Chen,parts_ordered,5.9,mistral
+REP-1051,2024-06-02T15:00:00,TechD_004,P0087,stalling at low RPM,Blocked fuel filter,0.81,yes,False,,escalated_resolved,5.4,mistral
+REP-1052,2024-06-05T17:00:00,TechC_003,P0087,stalling at low RPM,Blocked fuel filter,0.66,yes,True,Eng_Chen,resolved,2.0,llama3.1
+REP-1053,2024-06-08T15:00:00,TechA_001,P0234,hard start and low power,Boost pressure sensor,0.65,yes,True,Eng_Martinez,resolved,2.6,llama3.1
+REP-1054,2024-06-11T15:00:00,TechD_004,P0234,engine hesitation under load,Wastegate actuator failure,0.58,yes,True,Eng_Johnson,resolved,5.1,llama3.1
+REP-1055,2024-06-14T16:00:00,TechD_004,P0234,engine hesitation under load,Boost hose leak,0.56,yes,True,Eng_Johnson,resolved,2.1,llama3.1
+REP-1056,2024-06-17T16:00:00,TechB_002,P0087,engine hesitation under load,Fuel pressure regulator,0.86,yes,False,,resolved,2.0,llama3.1
+REP-1057,2024-06-20T13:00:00,TechB_002,P0191,engine hesitation under load,Injector return leak,0.69,yes,True,Eng_Martinez,parts_ordered,3.4,llama3.1
+REP-1058,2024-06-23T14:00:00,TechB_002,P0234,rough idle and black smoke,Boost hose leak,0.83,yes,True,Eng_Williams,escalated_resolved,2.3,llama3.1
+REP-1059,2024-06-26T13:00:00,TechC_003,P0087,rough idle and black smoke,Blocked fuel filter,0.87,yes,False,,escalated_resolved,0.6,mistral
+REP-1060,2024-06-29T17:00:00,TechA_001,P0191,rough idle and black smoke,Clogged fuel filter,0.64,yes,True,Eng_Martinez,resolved,5.1,mistral
+REP-1061,2024-07-02T16:00:00,TechB_002,P0191,engine hesitation under load,Weak lift pump,0.6,yes,True,Eng_Williams,resolved,1.4,mistral
+REP-1062,2024-07-05T11:00:00,TechA_001,P0234,stalling at low RPM,Boost hose leak,0.6,yes,True,Eng_Johnson,resolved,3.7,llama3.1
+REP-1063,2024-07-08T17:00:00,TechB_002,P0087,rough idle and black smoke,Fuel pressure regulator,0.63,yes,True,Eng_Williams,parts_ordered,4.9,mistral
+REP-1064,2024-07-11T08:00:00,TechE_005,P0191,excessive fuel consumption,Clogged fuel filter,0.77,yes,False,,resolved,0.6,llama3.1
+REP-1065,2024-07-14T14:00:00,TechB_002,P0087,engine hesitation under load,Fuel pump failure,0.73,yes,False,,resolved,4.5,mistral
+REP-1066,2024-07-17T14:00:00,TechD_004,P0087,engine hesitation under load,Fuel pressure regulator,0.89,yes,False,,parts_ordered,2.0,llama3.1
+REP-1067,2024-07-20T16:00:00,TechD_004,P0191,"check engine light, idling rough",Clogged fuel filter,0.92,yes,True,Eng_Johnson,escalated_resolved,5.2,llama3.1
+REP-1068,2024-07-23T11:00:00,TechE_005,P0087,excessive fuel consumption,Fuel pump failure,0.7,yes,False,,resolved,3.6,mistral
+REP-1069,2024-07-26T15:00:00,TechB_002,P0191,excessive fuel consumption,Fuel rail pressure sensor failure,0.65,yes,True,Eng_Chen,escalated_resolved,3.0,llama3.1
+REP-1070,2024-07-29T11:00:00,TechE_005,P0191,"check engine light, idling rough",Clogged fuel filter,0.64,yes,True,Eng_Chen,parts_ordered,3.4,llama3.1
+REP-1071,2024-08-01T11:00:00,TechC_003,P0234,"check engine light, idling rough",Boost hose leak,0.69,yes,True,Eng_Martinez,resolved,4.5,llama3.1
+REP-1072,2024-08-04T10:00:00,TechB_002,P0191,excessive fuel consumption,Wiring connector corrosion,0.95,yes,False,,escalated_resolved,2.0,mistral
+REP-1073,2024-08-07T10:00:00,TechC_003,P0234,hard start and low power,Boost hose leak,0.67,yes,True,Eng_Williams,resolved,2.2,mistral
+REP-1074,2024-08-10T15:00:00,TechC_003,P0234,excessive fuel consumption,Wastegate actuator failure,0.67,yes,True,,resolved,4.0,llama3.1
+REP-1075,2024-08-13T14:00:00,TechC_003,P0191,hard start and low power,Fuel rail pressure sensor failure,0.79,yes,False,,resolved,1.9,llama3.1
+REP-1076,2024-08-16T07:00:00,TechB_002,P0191,hard start and low power,Fuel rail pressure sensor failure,0.72,yes,True,Eng_Williams,resolved,6.0,llama3.1
+REP-1077,2024-08-19T10:00:00,TechE_005,P0234,engine hesitation under load,Boost pressure sensor,0.8,yes,False,,escalated_resolved,5.5,llama3.1
+REP-1078,2024-08-22T16:00:00,TechA_001,P0234,hard start and low power,Boost pressure sensor,0.68,yes,True,Eng_Martinez,resolved,4.1,llama3.1
+REP-1079,2024-08-25T16:00:00,TechD_004,P0191,"check engine light, idling rough",Weak lift pump,0.78,yes,True,Eng_Johnson,resolved,2.1,llama3.1
+REP-1080,2024-08-28T11:00:00,TechE_005,P0234,excessive fuel consumption,Boost pressure sensor,0.58,yes,True,Eng_Martinez,escalated_resolved,1.1,llama3.1
+REP-1081,2024-08-31T08:00:00,TechA_001,P0234,hard start and low power,Wastegate actuator failure,0.93,yes,False,,resolved,3.8,mistral
+REP-1082,2024-09-03T13:00:00,TechC_003,P0087,stalling at low RPM,Blocked fuel filter,0.6,yes,True,Eng_Chen,escalated_resolved,0.9,llama3.1
+REP-1083,2024-09-06T08:00:00,TechB_002,P0087,excessive fuel consumption,Fuel pressure regulator,0.69,yes,True,Eng_Johnson,resolved,3.7,llama3.1
+REP-1084,2024-09-09T09:00:00,TechE_005,P0087,engine hesitation under load,Fuel pressure regulator,0.82,yes,False,,escalated_resolved,5.8,llama3.1
+REP-1085,2024-09-12T09:00:00,TechC_003,P0087,engine hesitation under load,Blocked fuel filter,0.69,yes,True,Eng_Chen,resolved,4.1,llama3.1
+REP-1086,2024-09-15T12:00:00,TechA_001,P0234,engine hesitation under load,Wastegate actuator failure,0.74,yes,False,,parts_ordered,5.0,llama3.1
+REP-1087,2024-09-18T16:00:00,TechD_004,P0234,excessive fuel consumption,Boost hose leak,0.74,yes,True,Eng_Chen,resolved,1.6,mistral
+REP-1088,2024-09-21T08:00:00,TechA_001,P0191,excessive fuel consumption,Clogged fuel filter,0.73,yes,False,,parts_ordered,4.9,mistral
+REP-1089,2024-09-24T08:00:00,TechB_002,P0191,rough idle and black smoke,Clogged fuel filter,0.78,yes,False,,escalated_resolved,5.7,mistral
+REP-1090,2024-09-27T11:00:00,TechD_004,P0191,engine hesitation under load,Injector return leak,0.94,yes,False,,escalated_resolved,1.8,mistral
+REP-1091,2024-09-30T09:00:00,TechA_001,P0191,"check engine light, idling rough",Injector return leak,0.63,yes,True,Eng_Chen,resolved,5.6,mistral
+REP-1092,2024-10-03T16:00:00,TechE_005,P0087,excessive fuel consumption,Fuel pump failure,0.67,yes,True,Eng_Chen,resolved,3.0,llama3.1
+REP-1093,2024-10-06T14:00:00,TechC_003,P0087,hard start and low power,Blocked fuel filter,0.78,yes,False,,resolved,3.6,llama3.1
+REP-1094,2024-10-09T13:00:00,TechD_004,P0087,excessive fuel consumption,Fuel pump failure,0.68,yes,True,Eng_Martinez,escalated_resolved,5.8,llama3.1
+REP-1095,2024-10-12T14:00:00,TechA_001,P0234,stalling at low RPM,Boost hose leak,0.69,yes,True,Eng_Chen,resolved,4.5,llama3.1
+REP-1096,2024-10-15T11:00:00,TechC_003,P0234,stalling at low RPM,Wastegate actuator failure,0.58,yes,True,Eng_Chen,resolved,5.2,mistral
+REP-1097,2024-10-18T14:00:00,TechE_005,P0234,rough idle and black smoke,Boost pressure sensor,0.95,yes,False,,parts_ordered,0.9,mistral
+REP-1098,2024-10-21T13:00:00,TechA_001,P0234,excessive fuel consumption,Boost pressure sensor,0.97,yes,False,,resolved,2.9,mistral
+REP-1099,2024-10-24T11:00:00,TechC_003,P0087,"check engine light, idling rough",Fuel pump failure,0.57,yes,True,Eng_Chen,resolved,1.8,llama3.1
