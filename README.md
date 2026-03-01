@@ -1,4 +1,4 @@
-# TRACE — AI-Assisted Field Service Workflow
+# TRACE AI-Assisted Field Service Workflow
 
 **TRACE** (*Triage, Resolution, Audit, and Compliance Engine*) is an AI-powered field service app that helps junior diesel technicians diagnose fault codes safely and efficiently. When a tech scans a fault code (e.g., P0191) off a Cummins truck, TRACE guides them through diagnosis using 3 AI agents and automatically escalates dangerous or uncertain repairs to a senior engineer for human approval.
 
