@@ -119,7 +119,8 @@ def resume_after_approval(
 ) -> TraceState:
     """
     Called by FastAPI when the back-office engineer clicks Approve/Reject.
-    Resumes the paused workflow with the human decision.
+    Updates the checkpointed state with the human decision (does NOT
+    re-run the agent pipeline).
     """
     graph = _build_graph()
 
@@ -127,23 +128,24 @@ def resume_after_approval(
         app = graph.compile(checkpointer=checkpointer)
         config = {"configurable": {"thread_id": session_id}}
 
-        # Build the update with human decision
-        update = {
-            "human_approved": approved,
-            "approved_by": approved_by,
-            "workflow_status": "approved" if approved else "rejected",
-        }
+        # Get the saved state from when the workflow was paused
+        current_state = app.get_state(config)
+        state_values = dict(current_state.values)
 
-        # If approved, generate repair steps from the saved state
+        # Apply human decision
+        state_values["human_approved"] = approved
+        state_values["approved_by"] = approved_by
+        state_values["workflow_status"] = "approved" if approved else "rejected"
+
+        # If approved, generate repair steps
         if approved:
-            current_state = app.get_state(config)
-            cause = current_state.values.get("top_cause", "")
-            fault_code = current_state.values.get("fault_code", "P0191")
-            evidence_data = current_state.values.get("evidence_collected", {})
-            update["repair_steps"] = generate_repair_steps(
-                fault_code, cause, evidence_data
+            state_values["repair_steps"] = generate_repair_steps(
+                state_values.get("fault_code", "P0191"),
+                state_values.get("top_cause", ""),
+                state_values.get("evidence_collected", {}),
             )
 
-        final_state = app.invoke(update, config=config)
+        # Save updated state to the checkpoint
+        app.update_state(config, state_values)
 
-    return final_state
+    return state_values
