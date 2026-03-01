@@ -112,6 +112,87 @@ def run_workflow(
     return final_state
 
 
+def run_triage_only(
+    fault_code: str,
+    symptoms: str,
+    session_id: str,
+) -> TraceState:
+    """
+    Step 1 for Rasa flow: runs ONLY the triage agent (LLM diagnosis).
+    Returns state with triage_results, top_cause, top_confidence.
+    Does NOT run evidence or escalation — Rasa collects evidence first.
+
+    Called by FastAPI: POST /triage
+    """
+    llm_state: TraceState = {
+        "session_id": session_id,
+        "fault_code": fault_code.upper(),
+        "initial_symptoms": symptoms,
+        "triage_results": None,
+        "top_cause": None,
+        "top_confidence": None,
+        "evidence_collected": {},
+        "evidence_complete": False,
+        "updated_confidence": None,
+        "requires_human_approval": None,
+        "escalation_reason": None,
+        "human_approved": None,
+        "approved_by": None,
+        "repair_steps": None,
+        "workflow_status": "started",
+        "model_used": "llama3.1",
+        "error": None,
+    }
+
+    # Run triage agent directly (no graph needed for a single step)
+    result = triage_agent(llm_state)
+
+    # Save checkpoint so evidence step can pick up from here
+    graph = _build_graph()
+    with SqliteSaver.from_conn_string(DB_PATH) as checkpointer:
+        app = graph.compile(checkpointer=checkpointer)
+        config = {"configurable": {"thread_id": session_id}}
+        app.update_state(config, result)
+
+    return result
+
+
+def run_evidence_and_escalation(
+    session_id: str,
+    evidence: dict,
+) -> TraceState:
+    """
+    Step 2 for Rasa flow: after Rasa has collected evidence answers,
+    runs evidence agent (confidence update) + escalation agent.
+    Picks up the triage results saved by run_triage_only().
+
+    Called by FastAPI: POST /evidence
+    """
+    graph = _build_graph()
+
+    with SqliteSaver.from_conn_string(DB_PATH) as checkpointer:
+        app = graph.compile(checkpointer=checkpointer)
+        config = {"configurable": {"thread_id": session_id}}
+
+        # Retrieve saved triage state
+        saved = app.get_state(config)
+        state_values = dict(saved.values)
+
+        # Inject the evidence answers collected by Rasa
+        state_values["evidence_collected"] = evidence
+
+        # Run evidence agent → updates confidence
+        state_values = evidence_agent(state_values)
+
+        # Run escalation agent → decides approval / generates repair steps
+        state_values = escalation_agent(state_values)
+
+        # Save final state to checkpoint (for resume_after_approval if needed)
+        app.update_state(config, state_values)
+
+    return state_values
+
+
 def resume_after_approval(
     session_id: str,
     approved: bool,
