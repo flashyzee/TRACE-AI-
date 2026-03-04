@@ -1,6 +1,6 @@
 # agents/evidence_agent.py
 """
-Evidence Collection Agent — processes technician follow-up answers
+Evidence Collection Agent: processes technician follow(-) up answers
 and adjusts confidence based on rule-based logic.
 LangGraph node function: reads from and writes to TraceState.
 """

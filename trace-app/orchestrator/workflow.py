@@ -1,6 +1,6 @@
 # orchestrator/workflow.py
 """
-LangGraph orchestrator — wires Triage → Evidence → Escalation into
+LangGraph orchestrator: wires Triage → Evidence → Escalation into
 one stateful pipeline with SQLite checkpointing for pause/resume.
 """
 
@@ -12,7 +12,7 @@ from agents.triage_agent import triage_agent
 from agents.evidence_agent import evidence_agent
 from agents.escalation_agent import escalation_agent, generate_repair_steps
 
-# Default path — Zion can override via env var or config
+# Default path; Zion can override via env var or config
 DB_PATH = "trace.db"
 
 
@@ -52,8 +52,8 @@ def _build_graph() -> StateGraph:
         "escalation",
         route_after_escalation,
         {
-            "escalated": END,   # pause — wait for human approval
-            "resolved": END,    # done — repair steps ready
+            "escalated": END,   # pause, wait for human approval
+            "resolved": END,    # done, repair steps ready
         },
     )
 
@@ -120,7 +120,7 @@ def run_triage_only(
     """
     Step 1 for Rasa flow: runs ONLY the triage agent (LLM diagnosis).
     Returns state with triage_results, top_cause, top_confidence.
-    Does NOT run evidence or escalation — Rasa collects evidence first.
+    Does NOT run evidence or escalation. Rasa collects evidence first.
 
     Called by FastAPI: POST /triage
     """

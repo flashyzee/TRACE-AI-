@@ -1,6 +1,6 @@
 # Model License Statement
 
-**Project:** TRACE AI — Triage, Repair, and Automated Classification Engine
+**Project:** TRACE AI: Triage, Repair, and Automated Classification Engine
 **Date:** March 2026
 **Purpose:** Document all model licenses, framework licenses, and data governance for compliance and commercial viability.
 

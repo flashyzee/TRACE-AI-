@@ -1,6 +1,6 @@
 # agents/triage_agent.py
 """
-Triage Agent — takes fault code + symptoms, returns top 3 causes ranked by confidence.
+Triage Agent: takes fault code + symptoms, returns top 3 causes ranked by confidence.
 LangGraph node function: reads from and writes to TraceState.
 """
 

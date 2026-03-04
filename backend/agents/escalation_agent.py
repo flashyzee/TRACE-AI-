@@ -1,6 +1,6 @@
 # agents/escalation_agent.py
 """
-Escalation Agent — decides if human approval is required based on
+Escalation Agent: decides if human approval is required based on
 confidence, cost, urgency, and safety flags.
 If all clear, generates repair steps directly.
 LangGraph node function: reads from and writes to TraceState.
@@ -8,7 +8,7 @@ LangGraph node function: reads from and writes to TraceState.
 
 from ..orchestrator.state import TraceState
 
-COST_THRESHOLD = 500        # USD — repairs over this need approval
+COST_THRESHOLD = 500        # USD; repairs over this need approval
 CONFIDENCE_THRESHOLD = 0.70  # below this → escalate
 
 
@@ -54,7 +54,7 @@ def escalation_agent(state: TraceState) -> TraceState:
         state["workflow_status"] = "escalated"
         state["human_approved"] = None  # pending
     else:
-        # All clear — generate repair steps directly
+        # All clear, generate repair steps directly
         state["requires_human_approval"] = False
         state["workflow_status"] = "approved"
         state["repair_steps"] = generate_repair_steps(

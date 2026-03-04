@@ -1,4 +1,4 @@
-# Data Provenance — TRACE AI
+# Data Provenance: TRACE AI
 
 All data used in this project is **100% synthetic**. No real customer data, proprietary systems, or personally identifiable information (PII) was used at any stage.
 
@@ -23,10 +23,10 @@ All data used in this project is **100% synthetic**. No real customer data, prop
 
 | Model | License | Source |
 |-------|---------|--------|
-| Llama 3.1 8B | Meta Llama 3 Community License | ollama.com — free for research and commercial use (under 700M monthly active users) |
-| Mistral 7B | Apache 2.0 | ollama.com — fully open-source, commercial use allowed |
+| Llama 3.1 8B | Meta Llama 3 Community License | ollama.com, free for research and commercial use (under 700M monthly active users) |
+| Mistral 7B | Apache 2.0 | ollama.com, fully open(-) source, commercial use allowed |
 
-No proprietary or closed-source AI models are used. All inference runs locally via Ollama — no data is sent to external APIs.
+No proprietary or closed(-) source AI models are used. All inference runs locally via Ollama, and no data is sent to external APIs.
 
 ## Compliance Notes
 

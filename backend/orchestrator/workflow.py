@@ -1,6 +1,6 @@
 # orchestrator/workflow.py
 """
-LangGraph orchestrator — wires Triage → Evidence → Escalation into
+LangGraph orchestrator: wires Triage → Evidence → Escalation into
 one stateful pipeline with SQLite checkpointing for pause/resume.
 """
 
@@ -14,7 +14,7 @@ from ..agents.escalation_agent import escalation_agent, generate_repair_steps
 
 import os
 
-# Default path — points to data/ directory for generated files
+# Default path; points to data/ directory for generated files
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "trace.db")
 
 
@@ -54,8 +54,8 @@ def _build_graph() -> StateGraph:
         "escalation",
         route_after_escalation,
         {
-            "escalated": END,   # pause — wait for human approval
-            "resolved": END,    # done — repair steps ready
+            "escalated": END,   # pause, wait for human approval
+            "resolved": END,    # done, repair steps ready
         },
     )
 
@@ -122,7 +122,7 @@ def run_triage_only(
     """
     Step 1 for Rasa flow: runs ONLY the triage agent (LLM diagnosis).
     Returns state with triage_results, top_cause, top_confidence.
-    Does NOT run evidence or escalation — Rasa collects evidence first.
+    Does NOT run evidence or escalation. Rasa collects evidence first.
 
     Called by FastAPI: POST /triage
     """
