@@ -564,6 +564,82 @@ st.markdown(
         border-radius: 0 8px 8px 0;
     }
 
+    /* ── Offline Banner ────────────────────────────────────────────────── */
+    @keyframes slideBanner {
+        from { transform: translateY(-100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .offline-banner {
+        background: linear-gradient(135deg, #92400E, #B45309);
+        color: #FEF3C7;
+        padding: 0.7rem 1.2rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        animation: slideBanner 0.4s ease-out;
+        margin-bottom: 1rem;
+        border: 1px solid #D97706;
+    }
+    .offline-banner-icon { font-size: 1.2rem; }
+    .online-banner {
+        background: linear-gradient(135deg, #064E3B, #065F46);
+        color: #A7F3D0;
+        padding: 0.7rem 1.2rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        animation: slideBanner 0.4s ease-out;
+        margin-bottom: 1rem;
+        border: 1px solid #10B981;
+    }
+
+    /* ── Sync Stats Card ──────────────────────────────────────────────── */
+    .sync-stats-card {
+        background: linear-gradient(145deg, #0f1629, #16213E);
+        border: 1px solid #2D3A5C;
+        border-radius: 10px;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+    }
+    .sync-stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        font-size: 0.8rem;
+    }
+    .sync-stat-label { color: #9CA3AF; }
+    .sync-stat-value { color: #E5E7EB; font-weight: 600; }
+
+    /* ── Sync History Table ────────────────────────────────────────────── */
+    .sync-history-row {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.6rem 0.8rem;
+        border-bottom: 1px solid #2D3A5C33;
+        font-size: 0.85rem;
+    }
+    .sync-history-row:last-child { border-bottom: none; }
+    .sync-history-icon {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+    .sync-history-icon-ok { background: #10B98122; }
+    .sync-history-icon-err { background: #EF444422; }
+    .sync-history-details { flex: 1; }
+    .sync-history-time { color: #6B7280; font-size: 0.75rem; }
+
     /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
         display: flex;
@@ -605,43 +681,79 @@ with st.sidebar:
 
     # Sync status
     import sys
+    import time as _time
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    from backend.sync import check_connectivity, get_sync_stats, sync_to_cloud
+    from backend.sync import (
+        check_connectivity, get_sync_stats, sync_to_cloud,
+        get_last_sync_time, get_pending_count, format_time_ago,
+        get_sync_history, log_sync_event,
+    )
 
-    is_online = check_connectivity()
+    real_online = check_connectivity()
+
+    # Simulate offline toggle for demo
+    was_simulating = st.session_state.get("simulate_offline", False)
+    simulate_offline = st.toggle(
+        "Simulate Offline Mode",
+        value=was_simulating,
+        help="Toggle to simulate offline behavior for demo purposes",
+    )
+    st.session_state.simulate_offline = simulate_offline
+
+    # Detect reconnection (toggle OFF after being ON)
+    if was_simulating and not simulate_offline:
+        st.session_state.show_reconnect_sync = True
+
+    # Effective online status
+    is_online = real_online and not simulate_offline
     st.session_state.is_online = is_online
 
     if is_online:
         st.markdown(
             '<div class="sync-indicator sync-online">'
-            '<span class="sync-dot"></span> Online'
+            '<span class="sync-dot"></span> Cloud Sync: Online'
             '</div>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             '<div class="sync-indicator sync-offline">'
-            '<span class="sync-dot"></span> Offline (Local Mode)'
+            '<span class="sync-dot"></span> Offline — Local Mode'
             '</div>',
             unsafe_allow_html=True,
         )
 
-    # Cloud sync stats
+    # Sync stats
     stats = get_sync_stats()
     pending_total = stats["cases_pending"] + stats["decisions_pending"]
     synced_total = stats["cases_synced"] + stats["decisions_synced"]
+    last_sync = get_last_sync_time()
+    last_sync_text = format_time_ago(last_sync)
 
-    col_p, col_s = st.columns(2)
-    with col_p:
-        st.metric("Pending", pending_total)
-    with col_s:
-        st.metric("Synced", synced_total)
+    st.markdown(
+        f"""
+        <div class="sync-stats-card">
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Last sync</span>
+                <span class="sync-stat-value">{last_sync_text}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Pending</span>
+                <span class="sync-stat-value" style="color:{'#F59E0B' if pending_total > 0 else '#10B981'}">{pending_total}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Total synced</span>
+                <span class="sync-stat-value">{synced_total}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if is_online and pending_total > 0:
         if st.button("Sync Now", type="primary", use_container_width=True):
             with st.spinner("Syncing to cloud..."):
-                import time
-                time.sleep(1)
+                _time.sleep(1)
                 sync_result = sync_to_cloud()
             st.success(
                 f"Synced {sync_result['cases_synced']} cases, "
@@ -695,6 +807,56 @@ st.caption("Review escalated cases that require human review before repair steps
 
 st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
 
+# ── Offline / Reconnect Banner ──────────────────────────────────────────────
+_is_online = st.session_state.get("is_online", True)
+if not _is_online:
+    st.markdown(
+        '<div class="offline-banner">'
+        '<span class="offline-banner-icon">📡</span>'
+        '<span>Offline Mode — All data saved locally. Will sync when connection is restored.</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+if st.session_state.get("show_reconnect_sync"):
+    _pending = get_pending_count()
+    if _pending > 0:
+        st.markdown(
+            '<div class="online-banner">'
+            '<span class="offline-banner-icon">🔄</span>'
+            '<span>Connection restored! Syncing offline data...</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        progress_bar = st.progress(0, text=f"Syncing... {_pending} records pending")
+        sync_result = sync_to_cloud()
+        total_synced = sync_result["cases_synced"] + sync_result["decisions_synced"]
+        for i in range(_pending):
+            _time.sleep(0.25 + random.uniform(0, 0.15))
+            remaining = _pending - i - 1
+            progress_bar.progress(
+                (i + 1) / _pending,
+                text=f"Syncing... {remaining} records remaining",
+            )
+        progress_bar.progress(1.0, text=f"Synced! {total_synced} records uploaded to cloud")
+        log_sync_event(
+            "reconnect_sync",
+            cases_synced=sync_result["cases_synced"],
+            decisions_synced=sync_result["decisions_synced"],
+        )
+        _time.sleep(1.5)
+        st.session_state.show_reconnect_sync = False
+        st.rerun()
+    else:
+        st.markdown(
+            '<div class="online-banner">'
+            '<span class="offline-banner-icon">✅</span>'
+            '<span>Back online! All records are already synced.</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.session_state.show_reconnect_sync = False
+
 # ── Summary Metrics ──────────────────────────────────────────────────────────
 all_cases = get_cases()
 pending = [c for c in all_cases if c["status"] == "pending"]
@@ -735,8 +897,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Tabs: Pending | History ──────────────────────────────────────────────────
-tab_pending, tab_history = st.tabs(["🔶 Pending Approval", "📜 Decision History"])
+# ── Tabs: Pending | History | Sync Status ───────────────────────────────────
+tab_pending, tab_history, tab_sync = st.tabs(
+    ["🔶 Pending Approval", "📜 Decision History", "🔄 Sync Status"]
+)
 
 
 # ── Helper: render a case card ───────────────────────────────────────────────
@@ -1055,3 +1219,145 @@ with tab_history:
         st.caption(f"Showing {len(history)} decision(s).")
         for case in history:
             render_case_card(case, allow_actions=False)
+
+# ── Tab: Sync Status ────────────────────────────────────────────────────────
+with tab_sync:
+    st.markdown(
+        '<div class="page-header" style="margin-bottom:0.8rem;">'
+        '<span style="font-size:1.2rem">🔄</span>'
+        '<span style="font-size:1.1rem; font-weight:700; color:#E5E7EB;">'
+        'Sync Status & History</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Connection status card
+    sync_col1, sync_col2, sync_col3, sync_col4 = st.columns(4)
+
+    _eff_online = st.session_state.get("is_online", True)
+    _stats = get_sync_stats()
+    _pending = _stats["cases_pending"] + _stats["decisions_pending"]
+    _synced = _stats["cases_synced"] + _stats["decisions_synced"]
+    _last = get_last_sync_time()
+    _last_text = format_time_ago(_last)
+
+    with sync_col1:
+        status_color = "#10B981" if _eff_online else "#F59E0B"
+        status_label = "Online" if _eff_online else "Offline"
+        st.markdown(
+            f"""
+            <div class="summary-card" style="border-top: 3px solid {status_color};">
+                <div class="summary-icon" style="font-size:1.6rem;">
+                    {'🟢' if _eff_online else '🟠'}
+                </div>
+                <div class="summary-value" style="color:{status_color}; font-size:1.3rem;">
+                    {status_label}
+                </div>
+                <div class="summary-label">Connection</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with sync_col2:
+        st.markdown(
+            f"""
+            <div class="summary-card" style="border-top: 3px solid {'#F59E0B' if _pending > 0 else '#10B981'};">
+                <div class="summary-icon">📤</div>
+                <div class="summary-value" style="color:{'#F59E0B' if _pending > 0 else '#10B981'}; font-size:1.3rem;">
+                    {_pending}
+                </div>
+                <div class="summary-label">Pending Sync</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with sync_col3:
+        st.markdown(
+            f"""
+            <div class="summary-card" style="border-top: 3px solid #10B981;">
+                <div class="summary-icon">✅</div>
+                <div class="summary-value" style="color:#10B981; font-size:1.3rem;">
+                    {_synced}
+                </div>
+                <div class="summary-label">Total Synced</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with sync_col4:
+        st.markdown(
+            f"""
+            <div class="summary-card" style="border-top: 3px solid #3B82F6;">
+                <div class="summary-icon">🕐</div>
+                <div class="summary-value" style="color:#3B82F6; font-size:1rem;">
+                    {_last_text}
+                </div>
+                <div class="summary-label">Last Sync</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Breakdown
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    det_col1, det_col2 = st.columns(2)
+    with det_col1:
+        st.markdown("##### Records Breakdown")
+        st.markdown(
+            f"""
+            <div class="sync-stats-card">
+                <div class="sync-stat-row">
+                    <span class="sync-stat-label">Cases pending</span>
+                    <span class="sync-stat-value">{_stats['cases_pending']}</span>
+                </div>
+                <div class="sync-stat-row">
+                    <span class="sync-stat-label">Cases synced</span>
+                    <span class="sync-stat-value" style="color:#10B981">{_stats['cases_synced']}</span>
+                </div>
+                <div class="sync-stat-row">
+                    <span class="sync-stat-label">Decisions pending</span>
+                    <span class="sync-stat-value">{_stats['decisions_pending']}</span>
+                </div>
+                <div class="sync-stat-row">
+                    <span class="sync-stat-label">Decisions synced</span>
+                    <span class="sync-stat-value" style="color:#10B981">{_stats['decisions_synced']}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with det_col2:
+        st.markdown("##### Sync History (Last 10)")
+        sync_history = get_sync_history(limit=10)
+        if not sync_history:
+            st.caption("No sync events recorded yet.")
+        else:
+            history_html = '<div class="sync-stats-card">'
+            for event in sync_history:
+                evt_type = event.get("event_type", "")
+                cases_s = event.get("cases_synced", 0)
+                decs_s = event.get("decisions_synced", 0)
+                errs = event.get("errors_count", 0)
+                ts = event.get("timestamp", "")
+                ts_ago = format_time_ago(ts)
+
+                icon_class = "sync-history-icon-ok" if errs == 0 else "sync-history-icon-err"
+                icon = "✅" if errs == 0 else "⚠️"
+                label = "Reconnect sync" if "reconnect" in evt_type else "Cloud sync"
+                detail = f"{cases_s} cases, {decs_s} decisions"
+                if errs > 0:
+                    detail += f", {errs} error(s)"
+
+                history_html += (
+                    f'<div class="sync-history-row">'
+                    f'<div class="sync-history-icon {icon_class}">{icon}</div>'
+                    f'<div class="sync-history-details">'
+                    f'<div style="color:#E5E7EB; font-weight:600; font-size:0.83rem;">{label}</div>'
+                    f'<div style="color:#9CA3AF; font-size:0.78rem;">{detail}</div>'
+                    f'</div>'
+                    f'<div class="sync-history-time">{ts_ago}</div>'
+                    f'</div>'
+                )
+            history_html += '</div>'
+            st.markdown(history_html, unsafe_allow_html=True)
