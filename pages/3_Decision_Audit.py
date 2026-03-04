@@ -237,6 +237,63 @@ st.markdown(
         margin-top: 0.3rem;
     }
 
+    /* ── Confidence Strip ─────────────────────────────────────────────── */
+    .conf-strip {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        background: linear-gradient(145deg, #16213E 0%, #1a2744 100%);
+        border: 1px solid #2D3A5C;
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 1rem;
+        animation: fadeInUp 0.4s ease-out both;
+    }
+    .conf-strip-label {
+        font-size: 0.75rem;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .conf-strip-values {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex: 1;
+    }
+    .conf-strip-val {
+        font-size: 1.1rem;
+        font-weight: 800;
+        min-width: 3rem;
+        text-align: center;
+    }
+    .conf-strip-arrow {
+        color: #6B7280;
+        font-size: 0.9rem;
+    }
+    .conf-strip-bar-track {
+        flex: 1;
+        height: 6px;
+        background: #0f1629;
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+    }
+    .conf-strip-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+    }
+    .conf-strip-delta {
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0.15rem 0.6rem;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+
     /* ── Log Table ─────────────────────────────────────────────────────── */
     .log-table {
         width: 100%;
@@ -620,25 +677,40 @@ with tab_timeline:
         for session_id, entries in sessions.items():
             st.markdown(f"**Session:** `{session_id}`")
 
-            # Confidence progression chart
-            conf_data = [
-                (e.get("action", ""), e.get("confidence", 0))
+            # Confidence summary strip
+            conf_values = [
+                e.get("confidence", 0)
                 for e in entries
                 if e.get("confidence") is not None
             ]
-            if len(conf_data) > 1:
-                import pandas as pd
+            if conf_values:
+                start_conf = conf_values[0]
+                end_conf = conf_values[-1]
+                delta = end_conf - start_conf
+                start_pct = int(start_conf * 100)
+                end_pct = int(end_conf * 100)
+                delta_pct = int(delta * 100)
 
-                df_conf = pd.DataFrame(conf_data, columns=["Action", "Confidence"])
-                # Deduplicate by action to keep last value per action
-                df_conf = df_conf.drop_duplicates(subset="Action", keep="last")
+                end_color = "#10B981" if end_conf >= 0.7 else "#F59E0B" if end_conf >= 0.5 else "#EF4444"
+                start_color = "#10B981" if start_conf >= 0.7 else "#F59E0B" if start_conf >= 0.5 else "#EF4444"
+                delta_sign = "+" if delta >= 0 else ""
+                delta_bg = "#10B98122" if delta >= 0 else "#EF444422"
+                delta_color = "#10B981" if delta >= 0 else "#EF4444"
+
                 st.markdown(
-                    '<div style="font-size:0.82rem; color:#9CA3AF; font-weight:600; '
-                    'text-transform:uppercase; letter-spacing:0.05em; margin:0.5rem 0 0.3rem;">'
-                    "Confidence Progression</div>",
+                    f'<div class="conf-strip">'
+                    f'<span class="conf-strip-label">Confidence</span>'
+                    f'<div class="conf-strip-values">'
+                    f'<span class="conf-strip-val" style="color:{start_color}">{start_pct}%</span>'
+                    f'<div class="conf-strip-bar-track">'
+                    f'<div class="conf-strip-bar-fill" style="width:{end_pct}%; background:linear-gradient(90deg, {start_color}, {end_color});"></div>'
+                    f'</div>'
+                    f'<span class="conf-strip-val" style="color:{end_color}">{end_pct}%</span>'
+                    f'</div>'
+                    f'<span class="conf-strip-delta" style="background:{delta_bg}; color:{delta_color}">{delta_sign}{delta_pct}%</span>'
+                    f'</div>',
                     unsafe_allow_html=True,
                 )
-                st.line_chart(df_conf.set_index("Action"), height=180, use_container_width=True)
 
             # Timeline entries
             timeline_html = '<div class="timeline-container">'
@@ -706,20 +778,14 @@ with tab_table:
             unsafe_allow_html=True,
         )
     else:
-        table_html = """
-        <div style="max-height:600px; overflow-y:auto; border-radius:12px; border:1px solid #2D3A5C;">
-        <table class="log-table">
-        <tr>
-            <th>Log ID</th>
-            <th>Timestamp</th>
-            <th>Agent</th>
-            <th>Action</th>
-            <th>Confidence</th>
-            <th>Human</th>
-            <th>Model</th>
-            <th>Summary</th>
-        </tr>
-        """
+        table_html = (
+            '<div style="max-height:600px; overflow-y:auto; border-radius:12px; border:1px solid #2D3A5C;">'
+            '<table class="log-table">'
+            '<tr>'
+            '<th>Log ID</th><th>Timestamp</th><th>Agent</th><th>Action</th>'
+            '<th>Confidence</th><th>Human</th><th>Model</th><th>Summary</th>'
+            '</tr>'
+        )
 
         for entry in filtered_logs:
             agent = entry.get("agent_id", "")
@@ -746,18 +812,18 @@ with tab_table:
             if len(summary) > 80:
                 summary = summary[:77] + "..."
 
-            table_html += f"""
-            <tr>
-                <td style="font-family:monospace; font-size:0.8rem; color:#F59E0B;">{entry.get('log_id', '')}</td>
-                <td style="font-size:0.78rem; color:#9CA3AF; white-space:nowrap;">{entry.get('timestamp', '')}</td>
-                <td><span class="timeline-agent-badge {badge_class}">{agent.replace('_', ' ')}</span></td>
-                <td style="font-weight:600;">{format_action(entry.get('action', ''))}</td>
-                <td>{conf_str}</td>
-                <td>{human_str}</td>
-                <td style="font-size:0.78rem; color:#9CA3AF;">{model}</td>
-                <td style="font-size:0.82rem; color:#9CA3AF;">{summary}</td>
-            </tr>
-            """
+            table_html += (
+                f'<tr>'
+                f'<td style="font-family:monospace; font-size:0.8rem; color:#F59E0B;">{entry.get("log_id", "")}</td>'
+                f'<td style="font-size:0.78rem; color:#9CA3AF; white-space:nowrap;">{entry.get("timestamp", "")}</td>'
+                f'<td><span class="timeline-agent-badge {badge_class}">{agent.replace("_", " ")}</span></td>'
+                f'<td style="font-weight:600;">{format_action(entry.get("action", ""))}</td>'
+                f'<td>{conf_str}</td>'
+                f'<td>{human_str}</td>'
+                f'<td style="font-size:0.78rem; color:#9CA3AF;">{model}</td>'
+                f'<td style="font-size:0.82rem; color:#9CA3AF;">{summary}</td>'
+                f'</tr>'
+            )
 
         table_html += "</table></div>"
         st.markdown(table_html, unsafe_allow_html=True)
