@@ -8,6 +8,7 @@ Replace _push_* functions with real Supabase calls when ready.
 import sqlite3
 import socket
 import os
+import json
 from datetime import datetime
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -177,4 +178,108 @@ def sync_to_cloud():
     except Exception as e:
         result["errors"].append(f"decisions sync: {e}")
 
+    # Log the sync event for history/audit
+    total = result["cases_synced"] + result["decisions_synced"]
+    if total > 0 or result["errors"]:
+        log_sync_event(
+            "sync_complete",
+            cases_synced=result["cases_synced"],
+            decisions_synced=result["decisions_synced"],
+            errors_count=len(result["errors"]),
+            details=json.dumps(result["errors"][:5]) if result["errors"] else "",
+        )
+
     return result
+
+
+def init_sync_history():
+    """Create sync_history table in cloud DB for tracking sync events."""
+    conn = sqlite3.connect(_CLOUD_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sync_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            cases_synced INTEGER DEFAULT 0,
+            decisions_synced INTEGER DEFAULT 0,
+            errors_count INTEGER DEFAULT 0,
+            details TEXT,
+            timestamp TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+def log_sync_event(event_type, cases_synced=0, decisions_synced=0,
+                   errors_count=0, details=""):
+    """Record a sync event for history/audit."""
+    init_cloud_db()
+    init_sync_history()
+    conn = sqlite3.connect(_CLOUD_DB)
+    conn.execute(
+        """INSERT INTO sync_history
+           (event_type, cases_synced, decisions_synced, errors_count,
+            details, timestamp)
+           VALUES (?,?,?,?,?,?)""",
+        (event_type, cases_synced, decisions_synced, errors_count,
+         details, datetime.now().isoformat()),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_sync_history(limit=10):
+    """Retrieve the most recent sync events."""
+    init_cloud_db()
+    init_sync_history()
+    conn = sqlite3.connect(_CLOUD_DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT * FROM sync_history ORDER BY timestamp DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_last_sync_time():
+    """Return ISO timestamp of the last successful sync, or None."""
+    init_cloud_db()
+    init_sync_history()
+    conn = sqlite3.connect(_CLOUD_DB)
+    row = conn.execute(
+        "SELECT timestamp FROM sync_history "
+        "WHERE event_type IN ('sync_complete', 'reconnect_sync') "
+        "ORDER BY timestamp DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def get_pending_count():
+    """Return total number of records pending sync."""
+    stats = get_sync_stats()
+    return stats["cases_pending"] + stats["decisions_pending"]
+
+
+def format_time_ago(iso_timestamp):
+    """Convert ISO timestamp to human-readable relative time."""
+    if not iso_timestamp:
+        return "Never"
+    try:
+        dt = datetime.fromisoformat(iso_timestamp)
+        delta = datetime.now() - dt
+        seconds = delta.total_seconds()
+        if seconds < 60:
+            return "Just now"
+        elif seconds < 3600:
+            mins = int(seconds / 60)
+            return f"{mins} min ago"
+        elif seconds < 86400:
+            hours = int(seconds / 3600)
+            return f"{hours} hr ago"
+        else:
+            days = delta.days
+            return f"{days} day(s) ago"
+    except (ValueError, TypeError):
+        return "Unknown"

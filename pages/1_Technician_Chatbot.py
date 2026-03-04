@@ -365,6 +365,58 @@ st.markdown(
     .typing-dot:nth-child(2) { animation-delay: 0.2s; }
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
+    /* ── Offline Banner ────────────────────────────────────────────────── */
+    @keyframes slideBanner {
+        from { transform: translateY(-100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .offline-banner {
+        background: linear-gradient(135deg, #92400E, #B45309);
+        color: #FEF3C7;
+        padding: 0.7rem 1.2rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        animation: slideBanner 0.4s ease-out;
+        margin-bottom: 1rem;
+        border: 1px solid #D97706;
+    }
+    .offline-banner-icon { font-size: 1.2rem; }
+    .online-banner {
+        background: linear-gradient(135deg, #064E3B, #065F46);
+        color: #A7F3D0;
+        padding: 0.7rem 1.2rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        animation: slideBanner 0.4s ease-out;
+        margin-bottom: 1rem;
+        border: 1px solid #10B981;
+    }
+
+    /* ── Sync Stats Card ──────────────────────────────────────────────── */
+    .sync-stats-card {
+        background: linear-gradient(145deg, #0f1629, #16213E);
+        border: 1px solid #2D3A5C;
+        border-radius: 10px;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+    }
+    .sync-stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        font-size: 0.8rem;
+    }
+    .sync-stat-label { color: #9CA3AF; }
+    .sync-stat-value { color: #E5E7EB; font-weight: 600; }
+
     /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
         display: flex;
@@ -541,23 +593,71 @@ with st.sidebar:
     # Sync status
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    from backend.sync import check_connectivity
-    is_online = check_connectivity()
+    from backend.sync import (
+        check_connectivity, get_sync_stats, get_last_sync_time,
+        get_pending_count, format_time_ago, sync_to_cloud, log_sync_event,
+    )
+
+    real_online = check_connectivity()
+
+    # Simulate offline toggle for demo
+    was_simulating = st.session_state.get("simulate_offline", False)
+    simulate_offline = st.toggle(
+        "Simulate Offline Mode",
+        value=was_simulating,
+        help="Toggle to simulate offline behavior for demo purposes",
+    )
+    st.session_state.simulate_offline = simulate_offline
+
+    # Detect reconnection (toggle OFF after being ON)
+    if was_simulating and not simulate_offline:
+        st.session_state.show_reconnect_sync = True
+
+    # Effective online status
+    is_online = real_online and not simulate_offline
+    st.session_state.is_online = is_online
 
     if is_online:
         st.markdown(
             '<div class="sync-indicator sync-online">'
-            '<span class="sync-dot"></span> Online'
+            '<span class="sync-dot"></span> Cloud Sync: Online'
             '</div>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             '<div class="sync-indicator sync-offline">'
-            '<span class="sync-dot"></span> Offline (Local Mode)'
+            '<span class="sync-dot"></span> Offline — Local Mode'
             '</div>',
             unsafe_allow_html=True,
         )
+
+    # Sync stats
+    stats = get_sync_stats()
+    pending_total = stats["cases_pending"] + stats["decisions_pending"]
+    synced_total = stats["cases_synced"] + stats["decisions_synced"]
+    last_sync = get_last_sync_time()
+    last_sync_text = format_time_ago(last_sync)
+
+    st.markdown(
+        f"""
+        <div class="sync-stats-card">
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Last sync</span>
+                <span class="sync-stat-value">{last_sync_text}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Pending</span>
+                <span class="sync-stat-value" style="color:{'#F59E0B' if pending_total > 0 else '#10B981'}">{pending_total}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Total synced</span>
+                <span class="sync-stat-value">{synced_total}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.caption("LLM runs on device via Ollama. No cloud needed for diagnosis.")
 
     st.divider()
@@ -728,6 +828,57 @@ tracker_html += '</div>'
 st.markdown(tracker_html, unsafe_allow_html=True)
 
 st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
+
+# ── Offline / Reconnect Banner ──────────────────────────────────────────────
+_is_online = st.session_state.get("is_online", True)
+if not _is_online:
+    st.markdown(
+        '<div class="offline-banner">'
+        '<span class="offline-banner-icon">📡</span>'
+        '<span>Offline Mode — All data saved locally. Will sync when connection is restored.</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+if st.session_state.get("show_reconnect_sync"):
+    pending = get_pending_count()
+    if pending > 0:
+        st.markdown(
+            '<div class="online-banner">'
+            '<span class="offline-banner-icon">🔄</span>'
+            '<span>Connection restored! Syncing offline data...</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        progress_bar = st.progress(0, text=f"Syncing... {pending} records pending")
+        # Sync first, then animate progress for visual effect
+        sync_result = sync_to_cloud()
+        total_synced = sync_result["cases_synced"] + sync_result["decisions_synced"]
+        for i in range(pending):
+            time.sleep(0.25 + random.uniform(0, 0.15))
+            remaining = pending - i - 1
+            progress_bar.progress(
+                (i + 1) / pending,
+                text=f"Syncing... {remaining} records remaining",
+            )
+        progress_bar.progress(1.0, text=f"Synced! {total_synced} records uploaded to cloud")
+        log_sync_event(
+            "reconnect_sync",
+            cases_synced=sync_result["cases_synced"],
+            decisions_synced=sync_result["decisions_synced"],
+        )
+        time.sleep(1.5)
+        st.session_state.show_reconnect_sync = False
+        st.rerun()
+    else:
+        st.markdown(
+            '<div class="online-banner">'
+            '<span class="offline-banner-icon">✅</span>'
+            '<span>Back online! All records are already synced.</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.session_state.show_reconnect_sync = False
 
 # ── Phase: Triage (auto triggered after sidebar submit) ──────────────────────
 if st.session_state.chat_phase == "triage" and not any(
