@@ -1,101 +1,356 @@
 [
   {
     "log_id": "LOG-001",
-    "timestamp": "2024-03-15T09:23:41Z",
+    "timestamp": "2024-03-15T09:22:14Z",
     "session_id": "SESSION-REP-1000",
     "agent_id": "triage_agent",
+    "action": "initial_triage",
     "fault_code": "P0191",
     "inputs": {
       "fault_code": "P0191",
-      "symptoms": "rough idle, black smoke, hard cold start"
+      "vehicle_id": "UNIT-4471",
+      "mileage": 187000,
+      "symptoms": "Rough idle, intermittent power loss under load, occasional black smoke"
     },
     "output": {
-      "top_cause": "Weak lift pump",
-      "confidence": 0.72,
-      "model": "llama3.1"
+      "top_causes": [
+        {"cause": "Weak / failing fuel lift pump", "confidence": 0.72},
+        {"cause": "Clogged fuel filter (overdue replacement)", "confidence": 0.18},
+        {"cause": "Fuel rail pressure sensor drift / failure", "confidence": 0.10}
+      ],
+      "recommended_action": "Proceed to evidence collection"
     },
     "confidence": 0.72,
-    "human_approved": false,
+    "human_approved": null,
     "model_used": "llama3.1",
-    "notes": "Initial triage -- sent to evidence collection"
+    "metadata": {
+      "latency_ms": 1240,
+      "tokens_used": 312,
+      "fault_system": "Fuel",
+      "severity": "High"
+    }
   },
   {
     "log_id": "LOG-002",
-    "timestamp": "2024-03-15T09:24:18Z",
+    "timestamp": "2024-03-15T09:23:41Z",
     "session_id": "SESSION-REP-1000",
     "agent_id": "evidence_agent",
+    "action": "evidence_question_1",
     "fault_code": "P0191",
     "inputs": {
-      "fuel_pressure_psi": "Under 500 PSI",
-      "miles_since_filter": "Over 15,000 mi",
-      "visible_leak": "No leak visible",
-      "cold_start_issue": "Yes, hard cold start"
+      "question_id": "fuel_pressure_psi",
+      "question": "What is the fuel rail pressure reading on your scanner right now?",
+      "rationale": "Normal is 870+ PSI at key on. Below this confirms low pressure issue."
     },
     "output": {
-      "updated_confidence": 0.87,
-      "evidence_complete": true
+      "technician_response": "Under 500 PSI",
+      "diagnostic_significance": "Confirms abnormally low rail pressure, consistent with pump weakness",
+      "confidence_delta": 0.06
     },
-    "confidence": 0.87,
-    "human_approved": false,
+    "confidence": 0.78,
+    "human_approved": null,
     "model_used": "llama3.1",
-    "notes": "Evidence confirmed pump weakness -- confidence raised to 87%"
+    "metadata": {
+      "question_number": 1,
+      "total_questions": 4,
+      "response_time_sec": 28
+    }
   },
   {
     "log_id": "LOG-003",
-    "timestamp": "2024-03-15T09:24:52Z",
+    "timestamp": "2024-03-15T09:24:18Z",
     "session_id": "SESSION-REP-1000",
-    "agent_id": "escalation_agent",
+    "agent_id": "evidence_agent",
+    "action": "evidence_question_2",
     "fault_code": "P0191",
     "inputs": {
-      "confidence": 0.87,
-      "estimated_cost_usd": 850,
-      "urgency": "high"
+      "question_id": "miles_since_filter",
+      "question": "Approximately how many miles since the last fuel filter change?",
+      "rationale": "Cummins recommends filter change every 15,000 miles."
     },
     "output": {
-      "requires_human_approval": true,
-      "reason": "Estimated repair cost $850 exceeds $500 threshold"
+      "technician_response": "Over 15,000 mi",
+      "diagnostic_significance": "Overdue filter change could contribute, but low pressure reading suggests pump is primary cause",
+      "confidence_delta": 0.04
+    },
+    "confidence": 0.82,
+    "human_approved": null,
+    "model_used": "llama3.1",
+    "metadata": {
+      "question_number": 2,
+      "total_questions": 4,
+      "response_time_sec": 15
+    }
+  },
+  {
+    "log_id": "LOG-004",
+    "timestamp": "2024-03-15T09:24:42Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "evidence_agent",
+    "action": "evidence_question_3",
+    "fault_code": "P0191",
+    "inputs": {
+      "question_id": "visible_leak",
+      "question": "Can you see any fuel leak, wet spots, or smell fuel near the rail area?",
+      "rationale": "A fuel leak is a safety risk and triggers immediate escalation."
+    },
+    "output": {
+      "technician_response": "No leak visible",
+      "diagnostic_significance": "No safety escalation needed. Rules out fuel line rupture as cause.",
+      "confidence_delta": 0.0
+    },
+    "confidence": 0.82,
+    "human_approved": null,
+    "model_used": null,
+    "metadata": {
+      "question_number": 3,
+      "total_questions": 4,
+      "response_time_sec": 12,
+      "safety_flag": false
+    }
+  },
+  {
+    "log_id": "LOG-005",
+    "timestamp": "2024-03-15T09:25:03Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "evidence_agent",
+    "action": "evidence_question_4",
+    "fault_code": "P0191",
+    "inputs": {
+      "question_id": "cold_start_issue",
+      "question": "Does the truck have trouble starting when the engine is cold?",
+      "rationale": "Cold start issues point to lift pump weakness rather than sensor failure."
+    },
+    "output": {
+      "technician_response": "Yes, hard cold start",
+      "diagnostic_significance": "Cold start difficulty strongly correlates with lift pump degradation. Increases confidence in primary diagnosis.",
+      "confidence_delta": 0.05
     },
     "confidence": 0.87,
     "human_approved": null,
     "model_used": "llama3.1",
-    "notes": "Escalated to back-office -- cost threshold exceeded"
+    "metadata": {
+      "question_number": 4,
+      "total_questions": 4,
+      "response_time_sec": 9
+    }
   },
   {
-    "log_id": "LOG-004",
+    "log_id": "LOG-006",
+    "timestamp": "2024-03-15T09:25:06Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "evidence_agent",
+    "action": "confidence_update",
+    "fault_code": "P0191",
+    "inputs": {
+      "initial_confidence": 0.72,
+      "evidence_collected": {
+        "fuel_pressure_psi": "Under 500 PSI",
+        "miles_since_filter": "Over 15,000 mi",
+        "visible_leak": "No leak visible",
+        "cold_start_issue": "Yes, hard cold start"
+      }
+    },
+    "output": {
+      "updated_confidence": 0.87,
+      "confidence_change": "+0.15",
+      "evidence_summary": "All four evidence signals support lift pump as primary cause. Low rail pressure and cold start difficulty are the strongest indicators.",
+      "recommendation": "Forward to escalation agent for cost and threshold review"
+    },
+    "confidence": 0.87,
+    "human_approved": null,
+    "model_used": "llama3.1",
+    "metadata": {
+      "evidence_signals_positive": 3,
+      "evidence_signals_neutral": 1,
+      "evidence_signals_negative": 0,
+      "total_evidence_time_sec": 64
+    }
+  },
+  {
+    "log_id": "LOG-007",
+    "timestamp": "2024-03-15T09:25:09Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "escalation_agent",
+    "action": "escalation_check",
+    "fault_code": "P0191",
+    "inputs": {
+      "confidence": 0.87,
+      "top_cause": "Weak / failing fuel lift pump",
+      "estimated_cost_usd": 850,
+      "urgency": "high",
+      "safety_flag": false
+    },
+    "output": {
+      "requires_human_approval": true,
+      "escalation_reasons": [
+        "Estimated repair cost $850 exceeds the $500 auto-approval threshold"
+      ],
+      "auto_approved": false,
+      "assigned_to": "back_office_queue"
+    },
+    "confidence": 0.87,
+    "human_approved": null,
+    "model_used": null,
+    "metadata": {
+      "cost_threshold": 500,
+      "confidence_threshold": 0.70,
+      "rule_engine": "deterministic",
+      "escalation_trigger": "cost_exceeded"
+    }
+  },
+  {
+    "log_id": "LOG-008",
+    "timestamp": "2024-03-15T09:25:12Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "escalation_agent",
+    "action": "repair_steps_generated",
+    "fault_code": "P0191",
+    "inputs": {
+      "top_cause": "Weak / failing fuel lift pump",
+      "vehicle_id": "UNIT-4471",
+      "mileage": 187000
+    },
+    "output": {
+      "steps": [
+        "Verify fault code P0191 with diagnostic scanner",
+        "Check fuel rail pressure at key on (should be 870+ PSI)",
+        "Inspect fuel filter condition and replace if overdue",
+        "Test lift pump output pressure (min 45 PSI at idle)",
+        "If pump pressure low, replace fuel lift pump assembly",
+        "Prime system and bleed all air from fuel lines",
+        "Clear codes and run test drive (20 min, varied RPM)",
+        "Recheck scanner for returning codes",
+        "Log final rail pressure reading for records",
+        "Schedule 30 day follow up to verify repair holds"
+      ],
+      "steps_count": 10,
+      "estimated_labor_hours": 3.5,
+      "parts_required": ["Fuel lift pump assembly", "Fuel filter (Fleetguard FS1000)", "O-rings and seals kit"]
+    },
+    "confidence": 0.87,
+    "human_approved": null,
+    "model_used": "llama3.1",
+    "metadata": {
+      "latency_ms": 890,
+      "tokens_used": 478,
+      "repair_category": "fuel_system"
+    }
+  },
+  {
+    "log_id": "LOG-009",
+    "timestamp": "2024-03-15T09:25:15Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "escalation_agent",
+    "action": "notification_sent",
+    "fault_code": "P0191",
+    "inputs": {
+      "notification_type": "escalation_alert",
+      "recipient": "back_office_queue",
+      "case_summary": "P0191 on UNIT-4471, 87% confidence lift pump failure, $850 estimated cost"
+    },
+    "output": {
+      "notification_delivered": true,
+      "channel": "dashboard_queue",
+      "queue_position": 1,
+      "estimated_review_time_min": 5
+    },
+    "confidence": 0.87,
+    "human_approved": null,
+    "model_used": null,
+    "metadata": {
+      "notification_method": "internal_dashboard",
+      "priority": "high"
+    }
+  },
+  {
+    "log_id": "LOG-010",
     "timestamp": "2024-03-15T09:31:05Z",
     "session_id": "SESSION-REP-1000",
-    "agent_id": "human_approval",
+    "agent_id": "human_reviewer",
+    "action": "human_approval",
     "fault_code": "P0191",
     "inputs": {
       "repair_id": "REP-1000",
-      "action": "approve"
+      "reviewer": "Eng_Johnson",
+      "role": "Senior Engineer",
+      "review_action": "approve"
     },
     "output": {
-      "approved": true,
-      "approved_by": "Eng_Johnson"
+      "decision": "approved",
+      "reviewer_notes": "Evidence is consistent and confidence is strong. Approve lift pump replacement. Remind tech to also replace fuel filter while the system is open.",
+      "time_in_queue_sec": 353
     },
     "confidence": 0.87,
     "human_approved": true,
-    "model_used": "N/A",
-    "notes": "Senior engineer Eng_Johnson approved repair at 09:31 AM"
+    "model_used": null,
+    "metadata": {
+      "reviewer_experience_years": 14,
+      "review_duration_sec": 120,
+      "override_applied": false
+    }
   },
   {
-    "log_id": "LOG-005",
+    "log_id": "LOG-011",
     "timestamp": "2024-03-15T09:31:08Z",
     "session_id": "SESSION-REP-1000",
-    "agent_id": "resolution_agent",
+    "agent_id": "triage_agent",
+    "action": "resolution_delivered",
     "fault_code": "P0191",
     "inputs": {
-      "cause": "Weak lift pump",
-      "approved": true
+      "approved": true,
+      "approved_by": "Eng_Johnson",
+      "cause": "Weak / failing fuel lift pump"
     },
     "output": {
-      "repair_steps_generated": true,
-      "steps_count": 10
+      "repair_steps_delivered": true,
+      "delivery_channel": "technician_chatbot",
+      "steps_count": 10,
+      "total_resolution_time_sec": 534
     },
     "confidence": 0.87,
     "human_approved": true,
-    "model_used": "llama3.1",
-    "notes": "Repair steps delivered to tech. Total resolution time: 7 min 27 sec"
+    "model_used": null,
+    "metadata": {
+      "total_workflow_duration": "8 min 54 sec",
+      "agents_involved": ["triage_agent", "evidence_agent", "escalation_agent", "human_reviewer"],
+      "total_llm_calls": 5,
+      "total_tokens_used": 790
+    }
+  },
+  {
+    "log_id": "LOG-012",
+    "timestamp": "2024-03-15T09:31:10Z",
+    "session_id": "SESSION-REP-1000",
+    "agent_id": "triage_agent",
+    "action": "session_closed",
+    "fault_code": "P0191",
+    "inputs": {
+      "session_id": "SESSION-REP-1000",
+      "final_status": "resolved"
+    },
+    "output": {
+      "session_summary": {
+        "fault_code": "P0191",
+        "vehicle_id": "UNIT-4471",
+        "top_cause": "Weak / failing fuel lift pump",
+        "initial_confidence": 0.72,
+        "final_confidence": 0.87,
+        "escalated": true,
+        "human_approved": true,
+        "approved_by": "Eng_Johnson",
+        "total_duration_sec": 536,
+        "cost_estimate_usd": 850
+      },
+      "audit_hash": "sha256:a3f7c2e9d1b4...truncated"
+    },
+    "confidence": 0.87,
+    "human_approved": true,
+    "model_used": null,
+    "metadata": {
+      "compliance_status": "fully_traceable",
+      "log_entries_count": 12,
+      "data_retention_policy": "7 years per fleet compliance"
+    }
   }
 ]
