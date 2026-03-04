@@ -1,10 +1,21 @@
-node_modules
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
-*.db
-*.sqlite3
 venv/
 .env
+
+# Generated databases & logs
+*.db
+*.sqlite3
+data/*.db
+data/*.log
+decision_audit.log
+
+# LaTeX build artifacts
+*.aux
+*.out
+*.synctex.gz
+
+# OS files
+.DS_Store
