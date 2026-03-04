@@ -704,6 +704,7 @@ with st.sidebar:
     st.divider()
 
     st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home", icon="🏠")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot", icon="💬")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
