@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta
 import random
 
-st.set_page_config(page_title="TRACE AI — Approval Dashboard", page_icon="📋", layout="wide")
+st.set_page_config(page_title="TRACE AI Dashboard", page_icon="📋", layout="wide")
 
 # ── Database Setup ───────────────────────────────────────────────────────────
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dashboard.db")
@@ -41,11 +41,10 @@ def init_dashboard_db():
         )
         """
     )
-    # Migration for existing databases that lack the sync_status column
     try:
         conn.execute("ALTER TABLE cases ADD COLUMN sync_status TEXT DEFAULT 'pending'")
     except sqlite3.OperationalError:
-        pass  # column already exists
+        pass
     conn.commit()
     conn.close()
 
@@ -74,14 +73,14 @@ def seed_mock_cases():
             "escalation_reason": "Estimated repair cost exceeds $500 threshold",
             "evidence_json": json.dumps({
                 "fuel_pressure_psi": "Under 500 PSI",
-                "miles_since_filter": "5,000-15,000 mi",
+                "miles_since_filter": "5,000 to 15,000 mi",
                 "visible_leak": "No leak visible",
                 "cold_start_issue": "Yes, hard cold start",
             }),
             "status": "pending",
             "repair_steps_json": json.dumps([
                 "1. Verify fault code P0191 with diagnostic scanner",
-                "2. Check fuel rail pressure at key-on (should be 870+ PSI)",
+                "2. Check fuel rail pressure at key on (should be 870+ PSI)",
                 "3. Inspect fuel filter condition and replace if overdue",
                 "4. Test lift pump output pressure (min 45 PSI at idle)",
                 "5. If pump pressure low, replace fuel lift pump assembly",
@@ -97,25 +96,25 @@ def seed_mock_cases():
             "vehicle_id": "UNIT-3318",
             "mileage": 245000,
             "symptoms": "Strong fuel smell in cab, wet spots under truck, CEL on",
-            "top_cause": "Fuel injector o-ring leak",
+            "top_cause": "Fuel injector o ring leak",
             "confidence": 0.65,
             "updated_confidence": 0.65,
             "estimated_cost": 420,
             "urgency": "critical",
-            "escalation_reason": "Safety risk: visible fuel leak detected. Fire hazard — immediate escalation required.",
+            "escalation_reason": "Safety risk: visible fuel leak detected. Fire hazard, immediate escalation required.",
             "evidence_json": json.dumps({
-                "fuel_pressure_psi": "500-870 PSI",
+                "fuel_pressure_psi": "500 to 870 PSI",
                 "miles_since_filter": "Under 5,000 mi",
                 "visible_leak": "Yes, I see a leak",
                 "cold_start_issue": "No cold start issues",
             }),
             "status": "pending",
             "repair_steps_json": json.dumps([
-                "1. SAFETY: Isolate vehicle — no hot work within 25 ft",
+                "1. SAFETY: Isolate vehicle, no hot work within 25 ft",
                 "2. Verify fault code P0093 with diagnostic scanner",
-                "3. Visually inspect all fuel line connections and injector o-rings",
+                "3. Visually inspect all fuel line connections and injector o rings",
                 "4. Identify leak source using UV dye if needed",
-                "5. Replace damaged o-ring(s) and torque to spec",
+                "5. Replace damaged o ring(s) and torque to spec",
                 "6. Pressure test fuel system before starting engine",
                 "7. Clear codes and monitor for 30 min idle",
             ]),
@@ -166,14 +165,14 @@ def seed_mock_cases():
             "urgency": "medium",
             "escalation_reason": "Initial confidence below 70%",
             "evidence_json": json.dumps({
-                "fuel_pressure_psi": "500-870 PSI",
+                "fuel_pressure_psi": "500 to 870 PSI",
                 "miles_since_filter": "Over 15,000 mi",
                 "visible_leak": "No leak visible",
                 "cold_start_issue": "No cold start issues",
             }),
             "status": "approved",
             "approved_by": "Mike R. (Fleet Manager)",
-            "reviewer_notes": "Straightforward filter replacement. Approved — low cost, high likelihood.",
+            "reviewer_notes": "Straightforward filter replacement. Approved: low cost, high likelihood.",
             "repair_steps_json": json.dumps([
                 "1. Verify fault code P0191 with diagnostic scanner",
                 "2. Remove and inspect fuel filter",
@@ -259,50 +258,331 @@ seed_mock_cases()
 st.markdown(
     """
     <style>
-    .case-card {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+
+    /* ── Animations ────────────────────────────────────────────────────── */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.3); }
+        50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+    }
+    @keyframes progressFill {
+        from { width: 0%; }
+    }
+
+    /* ── Breadcrumb ─────────────────────────────────────────────────────── */
+    .breadcrumb {
+        font-size: 0.82rem;
+        color: #6B7280;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .breadcrumb a { color: #6B7280; text-decoration: none; }
+    .breadcrumb a:hover { color: #F59E0B; }
+    .breadcrumb .active { color: #F59E0B; font-weight: 600; }
+    .breadcrumb .sep { color: #4B5563; }
+
+    /* ── Sidebar ────────────────────────────────────────────────────────── */
+    .sidebar-brand {
+        text-align: center;
+        padding: 0.5rem 0 0.8rem;
+    }
+    .sidebar-brand-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #F59E0B, #EF4444);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .sidebar-brand-version {
+        font-size: 0.75rem;
+        color: #6B7280;
+    }
+    .sync-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .sync-dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulseGlow 2s ease-in-out infinite;
+    }
+    .sync-online { background: #0f2a1a; color: #10B981; }
+    .sync-online .sync-dot { background: #10B981; }
+    .sync-offline { background: #2a1a0f; color: #F59E0B; }
+    .sync-offline .sync-dot { background: #F59E0B; }
+
+    /* ── Summary Cards ─────────────────────────────────────────────────── */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .summary-card {
+        background: linear-gradient(145deg, #16213E 0%, #1a2744 100%);
+        border: 1px solid #2D3A5C;
+        border-radius: 14px;
+        padding: 1.2rem 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.5s ease-out both;
+        position: relative;
+        overflow: hidden;
+    }
+    .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: 14px 14px 0 0;
+    }
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .summary-card-pending::before { background: #F59E0B; }
+    .summary-card-approved::before { background: #10B981; }
+    .summary-card-rejected::before { background: #EF4444; }
+    .summary-card-cost::before { background: linear-gradient(90deg, #F59E0B, #EF4444); }
+    .summary-card-total::before { background: #3B82F6; }
+    .summary-icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 800;
+        margin: 0.1rem 0;
+    }
+    .summary-value-pending { color: #F59E0B; }
+    .summary-value-approved { color: #10B981; }
+    .summary-value-rejected { color: #EF4444; }
+    .summary-value-cost { color: #F59E0B; }
+    .summary-value-total { color: #3B82F6; }
+    .summary-label {
+        font-size: 0.78rem;
+        color: #9CA3AF;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 500;
+    }
+
+    /* ── Case Cards ────────────────────────────────────────────────────── */
+    .case-card-outer {
+        background: linear-gradient(145deg, #16213E 0%, #1a2744 100%);
+        border: 1px solid #2D3A5C;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.5s ease-out both;
+        position: relative;
+        overflow: hidden;
+    }
+    .case-card-outer:hover {
+        border-color: #3D4A6C;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .case-border-critical { border-left: 4px solid #EF4444; }
+    .case-border-high { border-left: 4px solid #F59E0B; }
+    .case-border-medium { border-left: 4px solid #3B82F6; }
+    .case-border-low { border-left: 4px solid #6B7280; }
+
+    /* ── Severity Badge ────────────────────────────────────────────────── */
+    .severity-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .severity-critical { background: #EF444422; color: #EF4444; }
+    .severity-high { background: #F59E0B22; color: #F59E0B; }
+    .severity-medium { background: #3B82F622; color: #3B82F6; }
+    .severity-low { background: #6B728022; color: #9CA3AF; }
+
+    /* ── Status Badge ──────────────────────────────────────────────────── */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .status-pending { background: #F59E0B22; color: #F59E0B; }
+    .status-approved { background: #10B98122; color: #10B981; }
+    .status-rejected { background: #EF444422; color: #EF4444; }
+
+    /* ── Confidence Bar ────────────────────────────────────────────────── */
+    .conf-bar-track {
+        background: #0a0f1f;
+        border-radius: 6px;
+        height: 10px;
+        overflow: hidden;
+        flex: 1;
+    }
+    .conf-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        animation: progressFill 0.8s ease-out;
+    }
+    .conf-display {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .conf-value {
+        font-weight: 800;
+        font-size: 1.1rem;
+        min-width: 45px;
+    }
+
+    /* ── Detail Fields ─────────────────────────────────────────────────── */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.8rem;
+        margin: 0.8rem 0;
+    }
+    .detail-item {
+        background: #0f1629;
+        border-radius: 10px;
+        padding: 0.8rem;
+        border: 1px solid #2D3A5C44;
+    }
+    .detail-label {
+        font-size: 0.72rem;
+        color: #6B7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+    }
+    .detail-value {
+        font-size: 0.92rem;
+        color: #E5E7EB;
+        font-weight: 600;
+    }
+
+    /* ── Evidence Table ────────────────────────────────────────────────── */
+    .evidence-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    .evidence-table th {
+        background: #0f1629;
+        color: #9CA3AF;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.6rem 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+    .evidence-table td {
+        padding: 0.5rem 1rem;
+        font-size: 0.88rem;
+        color: #E5E7EB;
+        border-bottom: 1px solid #2D3A5C33;
+    }
+    .evidence-table tr:last-child td { border-bottom: none; }
+
+    /* ── Repair Steps ──────────────────────────────────────────────────── */
+    .repair-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #2D3A5C22;
+    }
+    .repair-step:last-child { border-bottom: none; }
+    .repair-step-num {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #F59E0B33, #F59E0B11);
+        color: #F59E0B;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+    }
+    .repair-step-text {
+        font-size: 0.88rem;
+        color: #E5E7EB;
+        line-height: 1.4;
+    }
+
+    /* ── Decision Info ─────────────────────────────────────────────────── */
+    .decision-box {
+        background: #0f1629;
+        border-radius: 10px;
+        padding: 1rem;
+        border: 1px solid #2D3A5C44;
+        margin: 0.5rem 0;
+    }
+    .decision-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .decision-by {
+        font-size: 0.85rem;
+        color: #9CA3AF;
+    }
+    .decision-notes {
+        font-size: 0.88rem;
+        color: #E5E7EB;
+        font-style: italic;
+        padding: 0.5rem 0.8rem;
+        border-left: 3px solid #3B82F6;
+        background: #16213E;
+        border-radius: 0 8px 8px 0;
+    }
+
+    /* ── Page header ───────────────────────────────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-bottom: 0.3rem;
+    }
+    .page-header-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #E5E7EB;
+    }
+    .page-header-badge {
         background: #16213E;
         border: 1px solid #2D3A5C;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-    }
-    .case-card-critical {
-        border-left: 4px solid #EF4444;
-    }
-    .case-card-high {
-        border-left: 4px solid #F59E0B;
-    }
-    .case-card-medium {
-        border-left: 4px solid #3B82F6;
-    }
-    .badge-pending {
-        background: #F59E0B22;
-        color: #F59E0B;
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    .badge-approved {
-        background: #10B98122;
-        color: #10B981;
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    .badge-rejected {
-        background: #EF444422;
-        color: #EF4444;
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    .metric-highlight {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #F59E0B;
+        border-radius: 20px;
+        padding: 0.2rem 0.8rem;
+        font-size: 0.75rem;
+        color: #9CA3AF;
     }
     </style>
     """,
@@ -311,25 +591,19 @@ st.markdown(
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 📋 Dashboard Settings")
-
-    role = st.selectbox(
-        "Your Role",
-        ["Fleet Manager", "Senior Technician", "Junior Technician"],
-        help="Different roles see different information emphasis.",
+    st.markdown(
+        """
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-name">🔧 TRACE AI</div>
+            <div class="sidebar-brand-version">v0.1.0 Pilot Build</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    st.session_state["dashboard_role"] = role
 
     st.divider()
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home", icon="🏠")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot", icon="💬")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
 
-    # ── Cloud Sync Controls ─────────────────────────────────────────────────
-    st.divider()
-    st.markdown("### Cloud Sync")
-
+    # Sync status
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     from backend.sync import check_connectivity, get_sync_stats, sync_to_cloud
@@ -338,10 +612,21 @@ with st.sidebar:
     st.session_state.is_online = is_online
 
     if is_online:
-        st.success("ONLINE — Connected to cloud")
+        st.markdown(
+            '<div class="sync-indicator sync-online">'
+            '<span class="sync-dot"></span> Online'
+            '</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.warning("OFFLINE — Working locally")
+        st.markdown(
+            '<div class="sync-indicator sync-offline">'
+            '<span class="sync-dot"></span> Offline (Local Mode)'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
+    # Cloud sync stats
     stats = get_sync_stats()
     pending_total = stats["cases_pending"] + stats["decisions_pending"]
     synced_total = stats["cases_synced"] + stats["decisions_synced"]
@@ -356,7 +641,7 @@ with st.sidebar:
         if st.button("Sync Now", type="primary", use_container_width=True):
             with st.spinner("Syncing to cloud..."):
                 import time
-                time.sleep(1)  # Brief pause so animation is visible
+                time.sleep(1)
                 sync_result = sync_to_cloud()
             st.success(
                 f"Synced {sync_result['cases_synced']} cases, "
@@ -368,39 +653,96 @@ with st.sidebar:
     elif not is_online and pending_total > 0:
         st.info(f"{pending_total} record(s) queued. Go online to sync.")
 
-# ── Header ───────────────────────────────────────────────────────────────────
-st.markdown("## 📋 Approval Dashboard")
-st.caption(f"Logged in as: **{role}** | Showing cases that require human review")
+    st.divider()
+
+    st.markdown("### 📋 Dashboard Settings")
+    role = st.selectbox(
+        "Your Role",
+        ["Fleet Manager", "Senior Technician", "Junior Technician"],
+        help="Different roles see different information emphasis.",
+    )
+    st.session_state["dashboard_role"] = role
+
+    st.divider()
+
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home", icon="🏠")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot", icon="💬")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
+
+
+# ── Breadcrumb ──────────────────────────────────────────────────────────────
+st.markdown(
+    '<div class="breadcrumb">'
+    '<a href="/">Home</a>'
+    '<span class="sep">›</span>'
+    '<span class="active">Approval Dashboard</span>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+# ── Page Header ─────────────────────────────────────────────────────────────
+st.markdown(
+    '<div class="page-header">'
+    '<span style="font-size:1.6rem">📋</span>'
+    '<span class="page-header-title">Approval Dashboard</span>'
+    '<span class="page-header-badge">' + role + '</span>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+st.caption("Review escalated cases that require human review before repair steps can be issued.")
+
+st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
 
 # ── Summary Metrics ──────────────────────────────────────────────────────────
 all_cases = get_cases()
 pending = [c for c in all_cases if c["status"] == "pending"]
 approved = [c for c in all_cases if c["status"] == "approved"]
 rejected = [c for c in all_cases if c["status"] == "rejected"]
+total_cost = sum(c.get("estimated_cost", 0) for c in pending)
 
-m1, m2, m3, m4 = st.columns(4)
-with m1:
-    st.metric("Pending", len(pending))
-with m2:
-    st.metric("Approved", len(approved))
-with m3:
-    st.metric("Rejected", len(rejected))
-with m4:
-    total_cost = sum(c.get("estimated_cost", 0) for c in pending)
-    st.metric("Pending Est. Cost", f"${total_cost:,}")
-
-st.divider()
+st.markdown(
+    f"""
+    <div class="summary-grid">
+        <div class="summary-card summary-card-total" style="animation-delay:0.05s;">
+            <div class="summary-icon">📊</div>
+            <div class="summary-value summary-value-total">{len(all_cases)}</div>
+            <div class="summary-label">Total Cases</div>
+        </div>
+        <div class="summary-card summary-card-pending" style="animation-delay:0.1s;">
+            <div class="summary-icon">🔶</div>
+            <div class="summary-value summary-value-pending">{len(pending)}</div>
+            <div class="summary-label">Pending</div>
+        </div>
+        <div class="summary-card summary-card-approved" style="animation-delay:0.15s;">
+            <div class="summary-icon">✅</div>
+            <div class="summary-value summary-value-approved">{len(approved)}</div>
+            <div class="summary-label">Approved</div>
+        </div>
+        <div class="summary-card summary-card-rejected" style="animation-delay:0.2s;">
+            <div class="summary-icon">❌</div>
+            <div class="summary-value summary-value-rejected">{len(rejected)}</div>
+            <div class="summary-label">Rejected</div>
+        </div>
+        <div class="summary-card summary-card-cost" style="animation-delay:0.25s;">
+            <div class="summary-icon">💰</div>
+            <div class="summary-value summary-value-cost">${total_cost:,}</div>
+            <div class="summary-label">Pending Cost</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ── Tabs: Pending | History ──────────────────────────────────────────────────
 tab_pending, tab_history = st.tabs(["🔶 Pending Approval", "📜 Decision History"])
+
 
 # ── Helper: render a case card ───────────────────────────────────────────────
 def render_case_card(case, allow_actions=False):
     """Render a single case as a detailed card."""
     urgency = case.get("urgency", "medium")
     status = case.get("status", "pending")
-    card_class = f"case-card case-card-{urgency}"
-    badge_class = f"badge-{status}"
 
     evidence = {}
     try:
@@ -414,83 +756,96 @@ def render_case_card(case, allow_actions=False):
     except (json.JSONDecodeError, TypeError):
         pass
 
-    # Card header
-    col_title, col_badge = st.columns([4, 1])
-    with col_title:
+    # Card header row
+    header_col1, header_col2, header_col3 = st.columns([3, 1, 1])
+    with header_col1:
         st.markdown(
-            f"### {case['fault_code']} — {case.get('fault_name', 'Unknown')}"
+            f"#### {case['fault_code']}  |  {case.get('fault_name', 'Unknown')}"
         )
-    with col_badge:
+    with header_col2:
         st.markdown(
-            f'<span class="{badge_class}">{status.upper()}</span>',
+            f'<span class="severity-badge severity-{urgency}">{urgency.upper()}</span>',
+            unsafe_allow_html=True,
+        )
+    with header_col3:
+        st.markdown(
+            f'<span class="status-badge status-{status}">{status.upper()}</span>',
             unsafe_allow_html=True,
         )
 
-    # Key details in columns
-    role = st.session_state.get("dashboard_role", "Fleet Manager")
+    # Detail grid
+    conf = case.get("updated_confidence") or case.get("confidence", 0)
+    conf_pct = int(conf * 100)
+    conf_color = "#10B981" if conf >= 0.7 else "#F59E0B" if conf >= 0.5 else "#EF4444"
 
-    if role == "Fleet Manager":
-        # Manager view: cost-focused
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.markdown(f"**Vehicle:** {case.get('vehicle_id', '—')}")
-            st.caption(f"Mileage: {case.get('mileage', 0):,} mi")
-        with c2:
-            conf = case.get("updated_confidence") or case.get("confidence", 0)
-            color = "#10B981" if conf >= 0.7 else "#F59E0B" if conf >= 0.5 else "#EF4444"
-            st.markdown(f"**Confidence:** <span style='color:{color}'>{conf:.0%}</span>", unsafe_allow_html=True)
-            st.caption(f"Initial: {case.get('confidence', 0):.0%}")
-        with c3:
-            st.markdown(f"**Est. Cost:** ${case.get('estimated_cost', 0):,}")
-            st.caption(f"Urgency: {urgency.upper()}")
-        with c4:
-            created = case.get("created_at", "")
-            if created:
-                try:
-                    dt = datetime.fromisoformat(created)
-                    age = datetime.now() - dt
-                    if age.total_seconds() < 3600:
-                        age_str = f"{int(age.total_seconds() / 60)} min ago"
-                    elif age.total_seconds() < 86400:
-                        age_str = f"{int(age.total_seconds() / 3600)} hr ago"
-                    else:
-                        age_str = f"{age.days} day(s) ago"
-                    st.markdown(f"**Submitted:** {age_str}")
-                except ValueError:
-                    st.markdown(f"**Submitted:** {created[:16]}")
-            st.caption(f"Session: {case.get('session_id', '—')}")
-    elif role == "Junior Technician":
-        # Junior view: simplified, guidance-focused
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(f"**Vehicle:** {case.get('vehicle_id', '—')}")
-            st.caption(f"Mileage: {case.get('mileage', 0):,} mi")
-        with c2:
-            st.markdown(f"**Top Cause:** {case.get('top_cause', '—')}")
-            st.caption(f"Fault: {case['fault_code']}")
-        with c3:
-            st.markdown(f"**Urgency:** {urgency.upper()}")
-            conf = case.get("updated_confidence") or case.get("confidence", 0)
-            color = "#10B981" if conf >= 0.7 else "#F59E0B" if conf >= 0.5 else "#EF4444"
-            st.markdown(f"**Confidence:** <span style='color:{color}'>{conf:.0%}</span>", unsafe_allow_html=True)
-    else:
-        # Senior Technician view: technical focus
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(f"**Top Cause:** {case.get('top_cause', '—')}")
-            st.caption(f"Fault: {case['fault_code']} | Vehicle: {case.get('vehicle_id', '—')}")
-        with c2:
-            conf = case.get("updated_confidence") or case.get("confidence", 0)
-            bar_fill = int(conf * 20)
-            bar = "█" * bar_fill + "░" * (20 - bar_fill)
-            st.markdown(f"**Confidence:** `{bar}` {conf:.0%}")
-            st.caption(f"Initial: {case.get('confidence', 0):.0%} → Updated: {conf:.0%}")
-        with c3:
-            st.markdown(f"**Urgency:** {urgency.upper()}")
-            st.caption(f"Mileage: {case.get('mileage', 0):,} mi")
+    created = case.get("created_at", "")
+    age_str = "N/A"
+    if created:
+        try:
+            dt = datetime.fromisoformat(created)
+            age = datetime.now() - dt
+            if age.total_seconds() < 3600:
+                age_str = f"{int(age.total_seconds() / 60)} min ago"
+            elif age.total_seconds() < 86400:
+                age_str = f"{int(age.total_seconds() / 3600)} hr ago"
+            else:
+                age_str = f"{age.days} day(s) ago"
+        except ValueError:
+            age_str = created[:16]
+
+    st.markdown(
+        f"""
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">Vehicle</div>
+                <div class="detail-value">{case.get('vehicle_id', 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Mileage</div>
+                <div class="detail-value">{case.get('mileage', 0):,} mi</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Top Cause</div>
+                <div class="detail-value">{case.get('top_cause', 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Est. Cost</div>
+                <div class="detail-value" style="color:#F59E0B">${case.get('estimated_cost', 0):,}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Submitted</div>
+                <div class="detail-value">{age_str}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Session</div>
+                <div class="detail-value" style="font-size:0.8rem">{case.get('session_id', 'N/A')}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Confidence bar
+    st.markdown(
+        f"""
+        <div style="margin: 0.6rem 0;">
+            <div class="detail-label" style="margin-bottom:0.4rem;">Confidence Score</div>
+            <div class="conf-display">
+                <span class="conf-value" style="color:{conf_color}">{conf_pct}%</span>
+                <div class="conf-bar-track">
+                    <div class="conf-bar-fill" style="width:{conf_pct}%; background:linear-gradient(90deg, {conf_color}, {conf_color}88);"></div>
+                </div>
+            </div>
+            <div style="font-size:0.75rem; color:#6B7280; margin-top:0.2rem;">
+                Initial: {case.get('confidence', 0):.0%} → Updated: {conf:.0%}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Symptoms
-    st.markdown(f"**Symptoms:** {case.get('symptoms', '—')}")
+    st.markdown(f"**Symptoms:** {case.get('symptoms', 'N/A')}")
 
     # Escalation reason
     reason = case.get("escalation_reason", "")
@@ -500,46 +855,83 @@ def render_case_card(case, allow_actions=False):
         else:
             st.warning(f"🔶 {reason}")
 
-    # Expandable sections
-    with st.expander("📊 Evidence Collected"):
+    # Evidence section
+    with st.expander("📊 Evidence Collected", expanded=(status == "pending")):
         if evidence:
+            table_html = '<table class="evidence-table"><tr><th>Parameter</th><th>Response</th></tr>'
             for key, val in evidence.items():
                 label = key.replace("_", " ").title()
-                st.markdown(f"- **{label}:** {val}")
+                table_html += f'<tr><td>{label}</td><td><strong>{val}</strong></td></tr>'
+            table_html += '</table>'
+            st.markdown(table_html, unsafe_allow_html=True)
         else:
             st.caption("No evidence data available.")
 
-    if role in ("Senior Technician", "Junior Technician") or status != "pending":
-        with st.expander("🔧 Proposed Repair Steps"):
-            if repair_steps:
-                for step in repair_steps:
-                    st.markdown(f"  {step}")
-            else:
-                st.caption("No repair steps generated yet.")
+    # Repair steps preview
+    role = st.session_state.get("dashboard_role", "Fleet Manager")
+    with st.expander("🔧 Proposed Repair Steps", expanded=False):
+        if repair_steps:
+            steps_html = ""
+            for step in repair_steps:
+                # Extract step number if present
+                parts = step.split(". ", 1)
+                if len(parts) == 2 and parts[0].strip().isdigit():
+                    num = parts[0].strip()
+                    text = parts[1]
+                else:
+                    num = "•"
+                    text = step
+                steps_html += (
+                    f'<div class="repair-step">'
+                    f'<div class="repair-step-num">{num}</div>'
+                    f'<div class="repair-step-text">{text}</div>'
+                    f'</div>'
+                )
+            st.markdown(steps_html, unsafe_allow_html=True)
+        else:
+            st.caption("No repair steps generated yet.")
 
     # Decision info (for history)
     if status in ("approved", "rejected"):
         decided = case.get("decided_at", "")
-        st.markdown(
-            f"**Decision:** {status.upper()} by **{case.get('approved_by', '—')}**"
-            + (f" on {decided[:16]}" if decided else "")
-        )
-        if case.get("reviewer_notes"):
-            st.info(f"💬 Notes: {case['reviewer_notes']}")
+        status_icon = "✅" if status == "approved" else "❌"
+        status_color = "#10B981" if status == "approved" else "#EF4444"
 
-    # Read-only notice for junior technicians
+        decision_html = f"""
+        <div class="decision-box">
+            <div class="decision-header">
+                <span style="font-size:1.1rem">{status_icon}</span>
+                <span style="font-weight:700; color:{status_color}; text-transform:uppercase;">{status}</span>
+            </div>
+            <div class="decision-by">
+                By <strong>{case.get('approved_by', 'N/A')}</strong>
+                {f' on {decided[:16]}' if decided else ''}
+            </div>
+        """
+        if case.get("reviewer_notes"):
+            decision_html += f'<div class="decision-notes" style="margin-top:0.5rem">{case["reviewer_notes"]}</div>'
+        decision_html += '</div>'
+        st.markdown(decision_html, unsafe_allow_html=True)
+
+    # Read only notice for junior technicians
     if allow_actions and status == "pending" and role == "Junior Technician":
-        st.info("View only — approval requires Fleet Manager or Senior Technician.")
+        st.info("View only: approval requires Fleet Manager or Senior Technician.")
 
     # Action buttons (for pending cases)
     if allow_actions and status == "pending" and role != "Junior Technician":
         st.markdown("---")
-        reviewer_name = st.text_input(
-            "Your name",
-            value="",
-            placeholder="e.g. Mike R.",
-            key=f"name_{case['session_id']}",
-        )
+
+        action_col1, action_col2 = st.columns(2)
+        with action_col1:
+            reviewer_name = st.text_input(
+                "Your name",
+                value="",
+                placeholder="e.g. Mike R.",
+                key=f"name_{case['session_id']}",
+            )
+        with action_col2:
+            pass  # spacer
+
         notes = st.text_area(
             "Reviewer notes (optional)",
             placeholder="Add context for your decision...",
@@ -581,15 +973,30 @@ def render_case_card(case, allow_actions=False):
 with tab_pending:
     pending_cases = get_cases("pending")
     if not pending_cases:
-        st.success("No cases pending approval. All clear!")
+        st.markdown(
+            """
+            <div style="text-align:center; padding:3rem 1rem;">
+                <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+                <div style="font-size:1.1rem; color:#10B981; font-weight:600;">All Clear</div>
+                <div style="font-size:0.9rem; color:#9CA3AF;">No cases pending approval at this time.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         st.caption(f"Showing {len(pending_cases)} case(s) awaiting your review.")
         for case in pending_cases:
             render_case_card(case, allow_actions=True)
 
-# ── Tab: Decision History (with filters) ─────────────────────────────────────
+# ── Tab: Decision History ────────────────────────────────────────────────────
 with tab_history:
-    st.subheader("Decision History & Audit Trail")
+    st.markdown(
+        '<div class="page-header" style="margin-bottom:0.8rem;">'
+        '<span style="font-size:1.2rem">📜</span>'
+        '<span style="font-size:1.1rem; font-weight:700; color:#E5E7EB;">Decision History & Audit Trail</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
     # Filters
     filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
@@ -634,7 +1041,15 @@ with tab_history:
         history = filtered
 
     if not history:
-        st.info("No decisions match your filters.")
+        st.markdown(
+            """
+            <div style="text-align:center; padding:2rem 1rem;">
+                <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
+                <div style="font-size:0.95rem; color:#9CA3AF;">No decisions match your filters.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         st.caption(f"Showing {len(history)} decision(s).")
         for case in history:
