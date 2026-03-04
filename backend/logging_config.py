@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 # Ensure log directory exists
-log_file = Path("decision_audit.log")
+log_file = Path(__file__).resolve().parent.parent / "data" / "decision_audit.log"
 
 logging.basicConfig(
     filename=log_file,

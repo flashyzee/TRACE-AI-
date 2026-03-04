@@ -1,6 +1,9 @@
 import sqlite3
 
-conn = sqlite3.connect("trace_ai.db", check_same_thread=False)
+import os
+
+_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "trace_ai.db")
+conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
 cursor.execute("""

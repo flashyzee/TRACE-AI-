@@ -8,7 +8,7 @@ import random
 st.set_page_config(page_title="TRACE AI — Approval Dashboard", page_icon="📋", layout="wide")
 
 # ── Database Setup ───────────────────────────────────────────────────────────
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dashboard.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dashboard.db")
 
 
 def init_dashboard_db():
