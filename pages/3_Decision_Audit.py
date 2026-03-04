@@ -5,8 +5,10 @@ import sys
 import csv
 import io
 from datetime import datetime, timedelta
+from PIL import Image
 
-st.set_page_config(page_title="TRACE AI Decision Audit", layout="wide")
+_logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logo.png"))
+st.set_page_config(page_title="TRACE AI Decision Audit", page_icon=_logo, layout="wide")
 
 # ── Backend imports ──────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))

@@ -4,8 +4,10 @@ import json
 import os
 from datetime import datetime, timedelta
 import random
+from PIL import Image
 
-st.set_page_config(page_title="TRACE AI Dashboard", layout="wide")
+_logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logo.png"))
+st.set_page_config(page_title="TRACE AI Dashboard", page_icon=_logo, layout="wide")
 
 # ── Database Setup ───────────────────────────────────────────────────────────
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dashboard.db")

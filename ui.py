@@ -1,9 +1,12 @@
 import streamlit as st
 import sys, os
+from PIL import Image
+
+_logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png"))
 
 st.set_page_config(
     page_title="TRACE AI",
-    page_icon="🔧",
+    page_icon=_logo,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -414,9 +417,15 @@ st.markdown(
 )
 
 # ── Animated Hero Section ───────────────────────────────────────────────────
+import base64
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png"), "rb") as _f:
+    _logo_b64 = base64.b64encode(_f.read()).decode()
+
 st.markdown(
-    """
+    f"""
     <div class="hero-container">
+        <img src="data:image/png;base64,{_logo_b64}" alt="TRACE AI Logo"
+             style="width:150px; margin-bottom:1rem; animation: fadeInUp 0.6s ease-out;">
         <div class="hero-title">TRACE AI</div>
         <div class="hero-acronym">Transparent Repair Automation with Compliance Engine</div>
         <div class="hero-tagline">Intelligent Diesel Diagnostics for Modern Fleet Maintenance</div>
