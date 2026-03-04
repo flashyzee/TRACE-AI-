@@ -36,10 +36,16 @@ def init_dashboard_db():
             reviewer_notes TEXT,
             repair_steps_json TEXT,
             created_at TEXT,
-            decided_at TEXT
+            decided_at TEXT,
+            sync_status TEXT DEFAULT 'pending'
         )
         """
     )
+    # Migration for existing databases that lack the sync_status column
+    try:
+        conn.execute("ALTER TABLE cases ADD COLUMN sync_status TEXT DEFAULT 'pending'")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     conn.commit()
     conn.close()
 
@@ -235,7 +241,8 @@ def update_case_decision(session_id, status, approved_by, notes):
     conn.execute(
         """
         UPDATE cases
-        SET status = ?, approved_by = ?, reviewer_notes = ?, decided_at = ?
+        SET status = ?, approved_by = ?, reviewer_notes = ?, decided_at = ?,
+            sync_status = 'pending'
         WHERE session_id = ?
         """,
         (status, approved_by, notes, datetime.now().isoformat(), session_id),
@@ -318,6 +325,55 @@ with st.sidebar:
     st.page_link("ui.py", label="Home", icon="🏠")
     st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot", icon="💬")
     st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
+
+    # ── Cloud Sync Controls ─────────────────────────────────────────────────
+    st.divider()
+    st.markdown("### Cloud Sync")
+
+    if "is_online" not in st.session_state:
+        st.session_state.is_online = False  # Start offline for demo
+
+    is_online = st.toggle(
+        "Online Mode",
+        value=st.session_state.is_online,
+        key="online_toggle",
+    )
+    st.session_state.is_online = is_online
+
+    if is_online:
+        st.success("ONLINE — Connected to cloud")
+    else:
+        st.warning("OFFLINE — Working locally")
+
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    from backend.sync import get_sync_stats, sync_to_cloud
+
+    stats = get_sync_stats()
+    pending_total = stats["cases_pending"] + stats["decisions_pending"]
+    synced_total = stats["cases_synced"] + stats["decisions_synced"]
+
+    col_p, col_s = st.columns(2)
+    with col_p:
+        st.metric("Pending", pending_total)
+    with col_s:
+        st.metric("Synced", synced_total)
+
+    if is_online and pending_total > 0:
+        if st.button("Sync Now", type="primary", use_container_width=True):
+            with st.spinner("Syncing to cloud..."):
+                import time
+                time.sleep(1)  # Brief pause so animation is visible
+                sync_result = sync_to_cloud()
+            st.success(
+                f"Synced {sync_result['cases_synced']} cases, "
+                f"{sync_result['decisions_synced']} decisions"
+            )
+            if sync_result["errors"]:
+                st.error(f"Errors: {sync_result['errors']}")
+            st.rerun()
+    elif not is_online and pending_total > 0:
+        st.info(f"{pending_total} record(s) queued. Go online to sync.")
 
 # ── Header ───────────────────────────────────────────────────────────────────
 st.markdown("## 📋 Approval Dashboard")

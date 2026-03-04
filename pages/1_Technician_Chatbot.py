@@ -174,6 +174,14 @@ with st.sidebar:
     st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot", icon="💬")
     st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
 
+    st.divider()
+    is_online = st.session_state.get("is_online", False)
+    if is_online:
+        st.success("ONLINE")
+    else:
+        st.warning("OFFLINE — Diagnosis works locally")
+    st.caption("LLM runs on-device via Ollama. No cloud needed for diagnosis.")
+
 # ── Main Chat Area ───────────────────────────────────────────────────────────
 st.markdown("## 💬 Technician Chatbot")
 st.caption(

@@ -12,16 +12,23 @@ CREATE TABLE IF NOT EXISTS decision_log (
     session_id TEXT,
     action TEXT,
     confidence REAL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sync_status TEXT DEFAULT 'pending'
 )
 """)
+
+# Migration for existing databases that lack the sync_status column
+try:
+    cursor.execute("ALTER TABLE decision_log ADD COLUMN sync_status TEXT DEFAULT 'pending'")
+except sqlite3.OperationalError:
+    pass  # column already exists
 
 conn.commit()
 
 
 def log_decision(session_id: str, action: str, confidence: float):
     cursor.execute(
-        "INSERT INTO decision_log (session_id, action, confidence) VALUES (?, ?, ?)",
+        "INSERT INTO decision_log (session_id, action, confidence, sync_status) VALUES (?, ?, ?, 'pending')",
         (session_id, action, confidence),
     )
     conn.commit()
