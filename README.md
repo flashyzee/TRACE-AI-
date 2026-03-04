@@ -108,7 +108,7 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 # 3. Install Python dependencies
-pip install -r trace-app/requirements.txt
+pip install -r Trace-app/requirements.txt
 
 # 4. Start Ollama and pull models (in a separate terminal)
 ollama serve
@@ -116,7 +116,7 @@ ollama pull llama3.1            # ~4.7 GB, one-time download
 ollama pull mistral             # ~4.1 GB, fallback model
 
 # 5. Generate synthetic data (if not already present)
-python trace-app/data/generate_data.py
+python Trace-app/data/generate_data.py
 
 # 6. Launch the Streamlit UI
 streamlit run ui.py
@@ -180,7 +180,7 @@ TRACE-AI-/
 │   └── utils/
 │       └── llm.py                     # Ollama connection with model fallback
 │
-├── trace-app/
+├── Trace-app/
 │   ├── demo.py                        # End-to-end demo script
 │   ├── requirements.txt               # Python dependencies
 │   ├── agents/                        # Reference agent implementations
@@ -189,7 +189,7 @@ TRACE-AI-/
 │       ├── generate_data.py           # Synthetic data generator
 │       ├── fault_codes.csv            # 50 Cummins diesel fault codes
 │       ├── repair_history.csv         # 100 simulated repair records
-│       └── example_logs.json          # 5 sample decision log entries
+│       └── example_logs.json          # 12 sample decision log entries
 │
 ├── docs/
 │   ├── model_license_statement.md     # Full model + framework license details

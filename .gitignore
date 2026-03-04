@@ -19,3 +19,6 @@ decision_audit.log
 
 # OS files
 .DS_Store
+
+# Word temp files
+~$*
