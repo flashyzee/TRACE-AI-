@@ -260,7 +260,7 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+    html, body { font-family: 'Inter', sans-serif; }
 
     /* ── Animations ────────────────────────────────────────────────────── */
     @keyframes fadeInUp {
@@ -641,6 +641,9 @@ st.markdown(
     .sync-history-details { flex: 1; }
     .sync-history-time { color: #6B7280; font-size: 0.75rem; }
 
+    /* ── Hide Streamlit default page nav ───────────────────────────────── */
+    [data-testid="stSidebarNav"] { display: none; }
+
     /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
         display: flex;
@@ -668,6 +671,15 @@ st.markdown(
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
+    # Navigation at top (replaces default Streamlit page nav)
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
+
+    st.divider()
+
     st.markdown(
         """
         <div class="sidebar-brand">
@@ -776,13 +788,6 @@ with st.sidebar:
     )
     st.session_state["dashboard_role"] = role
 
-    st.divider()
-
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
 
 
 # ── Breadcrumb ──────────────────────────────────────────────────────────────
@@ -1022,7 +1027,7 @@ def render_case_card(case, allow_actions=False):
             st.warning(f"🔶 {reason}")
 
     # Evidence section
-    with st.expander("📊 Evidence Collected", expanded=(status == "pending")):
+    with st.expander("Evidence Collected", expanded=(status == "pending")):
         if evidence:
             table_html = '<table class="evidence-table"><tr><th>Parameter</th><th>Response</th></tr>'
             for key, val in evidence.items():
@@ -1035,7 +1040,7 @@ def render_case_card(case, allow_actions=False):
 
     # Repair steps preview
     role = st.session_state.get("dashboard_role", "Fleet Manager")
-    with st.expander("🔧 Proposed Repair Steps", expanded=False):
+    with st.expander("Proposed Repair Steps", expanded=False):
         if repair_steps:
             steps_html = ""
             for step in repair_steps:

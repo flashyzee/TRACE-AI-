@@ -15,7 +15,7 @@ st.markdown(
     /* ── Global resets & typography ─────────────────────────────────────── */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+    html, body { font-family: 'Inter', sans-serif; }
 
     /* ── Breadcrumb ─────────────────────────────────────────────────────── */
     .breadcrumb {
@@ -376,6 +376,9 @@ st.markdown(
     .sidebar-stat-label { color: #9CA3AF; }
     .sidebar-stat-value { color: #F59E0B; font-weight: 700; }
 
+    /* ── Hide Streamlit default page nav ───────────────────────────────── */
+    [data-testid="stSidebarNav"] { display: none; }
+
     /* ── Section dividers ──────────────────────────────────────────────── */
     .section-title {
         font-size: 1.3rem;
@@ -641,6 +644,15 @@ st.markdown(
 
 # ── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
+    # Navigation at top (replaces default Streamlit page nav)
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
+
+    st.divider()
+
     st.markdown(
         """
         <div class="sidebar-brand">
@@ -700,11 +712,3 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
-
-    st.divider()
-
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
