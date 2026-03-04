@@ -562,6 +562,10 @@ def get_phase_index(phase):
 
 def get_current_confidence():
     """Calculate current confidence based on triage + evidence answers."""
+    # If backend already computed an updated confidence, use it
+    if st.session_state.get("backend_confidence") is not None:
+        return st.session_state.backend_confidence
+
     triage = st.session_state.get("triage_data", [{}])
     top = triage[0] if triage else {}
     base_conf = top.get("confidence", 0.0)
@@ -570,6 +574,7 @@ def get_current_confidence():
     if not answers:
         return base_conf
 
+    # Fallback: local P0191-specific rules
     delta = 0.0
     if "Under 500" in str(answers.get("fuel_pressure_psi", "")):
         delta += 0.12
@@ -578,6 +583,11 @@ def get_current_confidence():
     if "cold start" in str(answers.get("cold_start_issue", "")).lower():
         delta += 0.06
     return min(base_conf + delta, 0.97)
+
+
+def generate_session_id():
+    """Generate a unique session ID for the backend workflow."""
+    return f"SESSION-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
 
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
@@ -700,6 +710,9 @@ with st.sidebar:
         check_connectivity, get_sync_stats, get_last_sync_time,
         get_pending_count, format_time_ago, sync_to_cloud, log_sync_event,
     )
+    from backend.orchestrator.workflow import run_triage_only, run_evidence_and_escalation
+    from backend.agents.evidence_agent import get_evidence_questions as backend_get_evidence_questions
+    import uuid
 
     real_online = check_connectivity()
 
@@ -897,9 +910,30 @@ if st.session_state.chat_phase == "triage" and not any(
         f"- **Symptoms:** {st.session_state.symptoms}"
     )
 
-    results = MOCK_TRIAGE_RESULTS.get(fc)
+    # Try real backend (LLM triage), fall back to mock data
+    results = None
+    session_id = generate_session_id()
+    st.session_state.session_id = session_id
+    st.session_state.backend_available = False
+    st.session_state.backend_confidence = None
+
+    try:
+        triage_state = run_triage_only(
+            fault_code=fc,
+            symptoms=st.session_state.symptoms,
+            session_id=session_id,
+        )
+        if triage_state.get("triage_results"):
+            results = triage_state["triage_results"]
+            st.session_state.backend_available = True
+    except Exception:
+        results = MOCK_TRIAGE_RESULTS.get(fc)
+
+    if not results:
+        results = MOCK_TRIAGE_RESULTS.get(fc)
+
     if results:
-        triage_text = "**🔍 Triage Complete: Top 3 Probable Causes**\n\n"
+        triage_text = "**Triage Complete: Top 3 Probable Causes**\n\n"
         for i, r in enumerate(results, 1):
             bar_fill = int(r["confidence"] * 20)
             bar = "█" * bar_fill + "░" * (20 - bar_fill)
@@ -924,20 +958,31 @@ if st.session_state.chat_phase == "triage" and not any(
             {"cause": "General diagnosis needed", "confidence": 0.50, "urgency": "medium", "estimated_cost_usd": 0}
         ]
 
+    # Load evidence questions from backend (with fallback)
+    try:
+        backend_qs = backend_get_evidence_questions(fc)
+        if backend_qs:
+            st.session_state.active_evidence_questions = backend_qs
+        else:
+            st.session_state.active_evidence_questions = EVIDENCE_QUESTIONS
+    except Exception:
+        st.session_state.active_evidence_questions = EVIDENCE_QUESTIONS
+
     st.session_state.chat_phase = "evidence"
     st.rerun()
 
 # ── Phase: Evidence collection (question by question) ────────────────────────
 if st.session_state.chat_phase == "evidence":
+    questions = st.session_state.get("active_evidence_questions", EVIDENCE_QUESTIONS)
     idx = st.session_state.current_question_idx
-    if idx < len(EVIDENCE_QUESTIONS) and not any(
-        EVIDENCE_QUESTIONS[idx]["question"] in m.get("content", "")
+    if idx < len(questions) and not any(
+        questions[idx]["question"] in m.get("content", "")
         for m in st.session_state.chat_messages
         if m["role"] == "assistant"
     ):
-        q = EVIDENCE_QUESTIONS[idx]
+        q = questions[idx]
         q_text = (
-            f"**Question {idx + 1} of {len(EVIDENCE_QUESTIONS)}:** {q['question']}\n\n"
+            f"**Question {idx + 1} of {len(questions)}:** {q['question']}\n\n"
             f"_Why we ask: {q['why_we_ask']}_"
         )
         add_bot_message(q_text)
@@ -972,16 +1017,17 @@ for msg in st.session_state.chat_messages:
 
 # ── Quick reply buttons (evidence phase) ─────────────────────────────────────
 if st.session_state.chat_phase == "evidence":
+    questions = st.session_state.get("active_evidence_questions", EVIDENCE_QUESTIONS)
     idx = st.session_state.current_question_idx
-    if idx < len(EVIDENCE_QUESTIONS):
-        q = EVIDENCE_QUESTIONS[idx]
+    if idx < len(questions):
+        q = questions[idx]
 
         # Evidence card with question context
         st.markdown(
             f"""
             <div class="evidence-card">
                 <div class="evidence-card-header">
-                    <span class="evidence-q-num">Question {idx + 1} of {len(EVIDENCE_QUESTIONS)}</span>
+                    <span class="evidence-q-num">Question {idx + 1} of {len(questions)}</span>
                 </div>
                 <div class="evidence-why">💡 {q['why_we_ask']}</div>
             </div>
@@ -998,7 +1044,7 @@ if st.session_state.chat_phase == "evidence":
                     st.session_state.evidence_answers[q["id"]] = reply
                     st.session_state.current_question_idx += 1
 
-                    if st.session_state.current_question_idx >= len(EVIDENCE_QUESTIONS):
+                    if st.session_state.current_question_idx >= len(questions):
                         st.session_state.chat_phase = "result"
                     st.rerun()
 
@@ -1009,49 +1055,73 @@ if st.session_state.chat_phase == "result" and not any(
     answers = st.session_state.evidence_answers
     triage = st.session_state.get("triage_data", [{}])
     top = triage[0] if triage else {}
+    questions = st.session_state.get("active_evidence_questions", EVIDENCE_QUESTIONS)
+
+    # Try real backend for evidence + escalation
+    updated_conf = None
+    needs_escalation = None
+    safety_flag = False
+    escalation_reason = ""
+
+    if st.session_state.get("backend_available") and st.session_state.get("session_id"):
+        try:
+            result_state = run_evidence_and_escalation(
+                session_id=st.session_state.session_id,
+                evidence=answers,
+            )
+            updated_conf = result_state.get("updated_confidence", top.get("confidence", 0.50))
+            needs_escalation = result_state.get("requires_human_approval", False)
+            safety_flag = "safety" in str(result_state.get("escalation_reason", "")).lower()
+            escalation_reason = result_state.get("escalation_reason", "")
+            st.session_state.backend_confidence = updated_conf
+        except Exception:
+            pass  # fall through to local computation
+
+    # Fallback: local hardcoded rules
+    if updated_conf is None:
+        base_conf = top.get("confidence", 0.50)
+        delta = 0.0
+        if "Under 500" in str(answers.get("fuel_pressure_psi", "")):
+            delta += 0.12
+        if "Over 15,000" in str(answers.get("miles_since_filter", "")):
+            delta += 0.08
+        if "cold start" in str(answers.get("cold_start_issue", "")).lower():
+            delta += 0.06
+        safety_flag = "leak" in str(answers.get("visible_leak", "")).lower()
+        updated_conf = min(base_conf + delta, 0.97)
+        needs_escalation = updated_conf < 0.70 or top.get("estimated_cost_usd", 0) > 500 or safety_flag
 
     base_conf = top.get("confidence", 0.50)
-    delta = 0.0
 
-    if "Under 500" in str(answers.get("fuel_pressure_psi", "")):
-        delta += 0.12
-    if "Over 15,000" in str(answers.get("miles_since_filter", "")):
-        delta += 0.08
-    if "cold start" in str(answers.get("cold_start_issue", "")).lower():
-        delta += 0.06
-    safety_flag = "leak" in str(answers.get("visible_leak", "")).lower()
-    if safety_flag:
-        delta += 0.0
-
-    updated_conf = min(base_conf + delta, 0.97)
-    needs_escalation = updated_conf < 0.70 or top.get("estimated_cost_usd", 0) > 500 or safety_flag
-
-    summary = "**📊 Evidence Summary & Updated Diagnosis**\n\n"
+    summary = "**Evidence Summary & Updated Diagnosis**\n\n"
     summary += "| Question | Your Answer |\n|---|---|\n"
-    for q in EVIDENCE_QUESTIONS:
+    for q in questions:
         ans = answers.get(q["id"], "N/A")
         summary += f"| {q['question'][:50]}... | **{ans}** |\n"
 
-    summary += f"\n\n**Updated confidence:** {base_conf:.0%} → **{updated_conf:.0%}**\n"
+    summary += f"\n\n**Updated confidence:** {base_conf:.0%} -> **{updated_conf:.0%}**\n"
     summary += f"**Top cause:** {top.get('cause', 'Unknown')}\n\n"
 
     if safety_flag:
         summary += (
-            "⚠️ **SAFETY ALERT:** Visible fuel leak detected. "
+            "**SAFETY ALERT:** Visible fuel leak detected. "
             "This case has been **automatically escalated** to a manager for approval.\n\n"
         )
     elif needs_escalation:
-        reason_parts = []
-        if updated_conf < 0.70:
-            reason_parts.append(f"confidence below 70% ({updated_conf:.0%})")
-        if top.get("estimated_cost_usd", 0) > 500:
-            reason_parts.append(f"estimated cost ${top['estimated_cost_usd']:,}")
-        summary += (
-            f"🔶 **Escalation required:** {', '.join(reason_parts)}. "
-            f"This case has been sent to the **Approval Dashboard** for manager review.\n\n"
-        )
+        if escalation_reason:
+            summary += f"**Escalation required:** {escalation_reason}\n\n"
+        else:
+            reason_parts = []
+            if updated_conf < 0.70:
+                reason_parts.append(f"confidence below 70% ({updated_conf:.0%})")
+            if top.get("estimated_cost_usd", 0) > 500:
+                reason_parts.append(f"estimated cost ${top['estimated_cost_usd']:,}")
+            summary += (
+                f"**Escalation required:** {', '.join(reason_parts)}. "
+                f"This case has been sent to the **Approval Dashboard** for manager review.\n\n"
+            )
     else:
-        summary += "✅ **Auto approved:** confidence is high and cost is within limits.\n\n"
+        summary += "**Auto approved:** confidence is high and cost is within limits.\n\n"
 
     summary += (
         "You can view the case status on the **Approval Dashboard** page. "

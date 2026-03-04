@@ -93,6 +93,18 @@ echo -e "  ${GREEN}data/ directory ready.${RESET}"
 echo -e "${BOLD}[5/5] Starting TRACE AI services...${RESET}"
 echo ""
 
+# Set API key if not already set
+if [ -z "$TRACE_API_KEY" ]; then
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+        echo -e "  ${GREEN}Loaded API key from .env file.${RESET}"
+    else
+        export TRACE_API_KEY="trace-dev-key-$(date +%s)"
+        echo -e "  ${YELLOW}No .env file found. Using auto-generated API key.${RESET}"
+        echo -e "  ${YELLOW}For production, copy .env.example to .env and set a real key.${RESET}"
+    fi
+fi
+
 # Start FastAPI in the background
 echo -e "  ${CYAN}Starting FastAPI backend on port $FASTAPI_PORT...${RESET}"
 cd "$PROJECT_ROOT"

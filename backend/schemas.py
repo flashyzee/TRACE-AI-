@@ -11,3 +11,14 @@ class TriageRequest(BaseModel):
 
 class TriageResponse(BaseModel):
     result: dict
+
+
+class EvidenceRequest(BaseModel):
+    session_id: str
+    evidence: Dict
+
+
+class ApprovalRequest(BaseModel):
+    session_id: str
+    approved: bool
+    approved_by: str
