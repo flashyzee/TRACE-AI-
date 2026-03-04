@@ -4,7 +4,7 @@ from .schemas import TriageRequest
 from .logging_config import audit_log
 from .db import log_decision
 
-from orchestrator.workflow import run_workflow
+from .orchestrator.workflow import run_workflow
 
 app = FastAPI(title="TRACE AI Backend")
 

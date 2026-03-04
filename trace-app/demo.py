@@ -15,8 +15,12 @@ Usage:
 
 import json
 import time
-from orchestrator.workflow import run_workflow, resume_after_approval
-from agents.evidence_agent import get_evidence_questions
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from backend.orchestrator.workflow import run_workflow, resume_after_approval
+from backend.agents.evidence_agent import get_evidence_questions
 
 
 def print_divider(title):
