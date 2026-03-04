@@ -712,9 +712,14 @@ with st.sidebar:
         check_connectivity, get_sync_stats, get_last_sync_time,
         get_pending_count, format_time_ago, sync_to_cloud, log_sync_event,
     )
-    from backend.orchestrator.workflow import run_triage_only, run_evidence_and_escalation
-    from backend.agents.evidence_agent import get_evidence_questions as backend_get_evidence_questions
     import uuid
+
+    try:
+        from backend.orchestrator.workflow import run_triage_only, run_evidence_and_escalation
+        from backend.agents.evidence_agent import get_evidence_questions as backend_get_evidence_questions
+        _BACKEND_AVAILABLE = True
+    except ImportError:
+        _BACKEND_AVAILABLE = False
 
     real_online = check_connectivity()
 
@@ -919,16 +924,19 @@ if st.session_state.chat_phase == "triage" and not any(
     st.session_state.backend_available = False
     st.session_state.backend_confidence = None
 
-    try:
-        triage_state = run_triage_only(
-            fault_code=fc,
-            symptoms=st.session_state.symptoms,
-            session_id=session_id,
-        )
-        if triage_state.get("triage_results"):
-            results = triage_state["triage_results"]
-            st.session_state.backend_available = True
-    except Exception:
+    if _BACKEND_AVAILABLE:
+        try:
+            triage_state = run_triage_only(
+                fault_code=fc,
+                symptoms=st.session_state.symptoms,
+                session_id=session_id,
+            )
+            if triage_state.get("triage_results"):
+                results = triage_state["triage_results"]
+                st.session_state.backend_available = True
+        except Exception:
+            results = MOCK_TRIAGE_RESULTS.get(fc)
+    else:
         results = MOCK_TRIAGE_RESULTS.get(fc)
 
     if not results:
@@ -961,13 +969,16 @@ if st.session_state.chat_phase == "triage" and not any(
         ]
 
     # Load evidence questions from backend (with fallback)
-    try:
-        backend_qs = backend_get_evidence_questions(fc)
-        if backend_qs:
-            st.session_state.active_evidence_questions = backend_qs
-        else:
+    if _BACKEND_AVAILABLE:
+        try:
+            backend_qs = backend_get_evidence_questions(fc)
+            if backend_qs:
+                st.session_state.active_evidence_questions = backend_qs
+            else:
+                st.session_state.active_evidence_questions = EVIDENCE_QUESTIONS
+        except Exception:
             st.session_state.active_evidence_questions = EVIDENCE_QUESTIONS
-    except Exception:
+    else:
         st.session_state.active_evidence_questions = EVIDENCE_QUESTIONS
 
     st.session_state.chat_phase = "evidence"
@@ -1065,7 +1076,7 @@ if st.session_state.chat_phase == "result" and not any(
     safety_flag = False
     escalation_reason = ""
 
-    if st.session_state.get("backend_available") and st.session_state.get("session_id"):
+    if _BACKEND_AVAILABLE and st.session_state.get("backend_available") and st.session_state.get("session_id"):
         try:
             result_state = run_evidence_and_escalation(
                 session_id=st.session_state.session_id,
