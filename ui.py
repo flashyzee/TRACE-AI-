@@ -334,7 +334,7 @@ st.markdown(
     /* ── Sidebar branding ──────────────────────────────────────────────── */
     .sidebar-brand {
         text-align: center;
-        padding: 0.5rem 0 1rem;
+        padding: 0.1rem 0 0.15rem;
     }
     .sidebar-brand-name {
         font-size: 1.4rem;
@@ -378,6 +378,11 @@ st.markdown(
 
     /* ── Hide Streamlit default page nav ───────────────────────────────── */
     [data-testid="stSidebarNav"] { display: none; }
+
+    /* ── Reduce sidebar top padding ──────────────────────────────────── */
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem;
+    }
 
     /* ── Section dividers ──────────────────────────────────────────────── */
     .section-title {
@@ -435,31 +440,26 @@ st.markdown(
     """
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:1rem;">
         <div class="kpi-card" style="animation-delay:0.1s;">
-            <div class="kpi-icon">📊</div>
             <div class="kpi-value">127</div>
             <div class="kpi-label">Cases Resolved</div>
             <div class="kpi-delta">+12% this week</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.2s;">
-            <div class="kpi-icon">🎯</div>
             <div class="kpi-value">87%</div>
             <div class="kpi-label">Avg Confidence</div>
             <div class="kpi-delta">+3% from baseline</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.3s;">
-            <div class="kpi-icon">⏱️</div>
             <div class="kpi-value">42%</div>
             <div class="kpi-label">MTTR Reduction</div>
             <div class="kpi-delta">vs. manual process</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.4s;">
-            <div class="kpi-icon">🔧</div>
             <div class="kpi-value">78%</div>
             <div class="kpi-label">First Time Fix Rate</div>
             <div class="kpi-delta">+18% improvement</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.5s;">
-            <div class="kpi-icon">💰</div>
             <div class="kpi-value">$24k</div>
             <div class="kpi-label">Est. Savings</div>
             <div class="kpi-delta">this quarter</div>
@@ -536,7 +536,6 @@ with col_left:
     st.markdown(
         """
         <div class="nav-card" style="animation-delay:0.1s;">
-            <div class="nav-card-icon">💬</div>
             <h3>Technician Chatbot</h3>
             <p>Report fault codes, describe symptoms, and get AI powered
             diagnosis with step by step repair guidance in the field.</p>
@@ -544,13 +543,12 @@ with col_left:
         """,
         unsafe_allow_html=True,
     )
-    st.page_link("pages/1_Technician_Chatbot.py", label="Open Chatbot  ➜", icon="💬")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Open Chatbot  ➜")
 
 with col_right:
     st.markdown(
         """
         <div class="nav-card" style="animation-delay:0.2s;">
-            <div class="nav-card-icon">📋</div>
             <h3>Approval Dashboard</h3>
             <p>Review escalated cases, approve or reject repair plans,
             and track decision history with a full audit trail.</p>
@@ -559,7 +557,7 @@ with col_right:
         unsafe_allow_html=True,
     )
     st.page_link(
-        "pages/2_Approval_Dashboard.py", label="Open Dashboard  ➜", icon="📋"
+        "pages/2_Approval_Dashboard.py", label="Open Dashboard  ➜"
     )
 
 st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
@@ -575,7 +573,6 @@ st.markdown(
     <div class="steps-grid">
         <div class="step-card" style="animation-delay:0.1s;">
             <div class="step-num">1</div>
-            <div class="step-icon">📝</div>
             <div class="step-title">Report</div>
             <div class="step-desc">
                 Technician enters the DTC fault code, vehicle ID, mileage,
@@ -584,7 +581,6 @@ st.markdown(
         </div>
         <div class="step-card" style="animation-delay:0.2s;">
             <div class="step-num">2</div>
-            <div class="step-icon">🧠</div>
             <div class="step-title">Triage</div>
             <div class="step-desc">
                 The AI agent analyzes the fault code and ranks the top 3
@@ -593,7 +589,6 @@ st.markdown(
         </div>
         <div class="step-card" style="animation-delay:0.3s;">
             <div class="step-num">3</div>
-            <div class="step-icon">🔍</div>
             <div class="step-title">Evidence</div>
             <div class="step-desc">
                 TRACE asks targeted follow up questions (fuel pressure, mileage,
@@ -602,7 +597,6 @@ st.markdown(
         </div>
         <div class="step-card" style="animation-delay:0.4s;">
             <div class="step-num">4</div>
-            <div class="step-icon">⚖️</div>
             <div class="step-title">Escalation</div>
             <div class="step-desc">
                 If confidence is low or repair cost is high, the case is
@@ -611,7 +605,6 @@ st.markdown(
         </div>
         <div class="step-card" style="animation-delay:0.5s;">
             <div class="step-num">5</div>
-            <div class="step-icon">✅</div>
             <div class="step-title">Resolution</div>
             <div class="step-desc">
                 Approved repair steps are delivered to the technician.
@@ -629,13 +622,13 @@ st.markdown(
     <div class="footer">
         <div class="footer-brand">TRACE AI  ·  Transparent Repair Automation with Compliance Engine</div>
         <div class="footer-models">
-            <span class="model-badge">🦙 Llama 3.1 (Triage)</span>
-            <span class="model-badge">🌬️ Mistral 7B (Evidence)</span>
-            <span class="model-badge">🔒 Offline First</span>
-            <span class="model-badge">☁️ Cloud Sync</span>
+            <span class="model-badge">Llama 3.1 (Triage)</span>
+            <span class="model-badge">Mistral 7B (Evidence)</span>
+            <span class="model-badge">Offline First</span>
+            <span class="model-badge">Cloud Sync</span>
         </div>
         <div class="footer-meta">
-            Built by DePauw Affiliation Investment Group  ·  MIT License  ·  Competition Demo
+            MIT License  ·  XTern Challenge Demo
         </div>
     </div>
     """,
@@ -644,24 +637,25 @@ st.markdown(
 
 # ── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Navigation at top (replaces default Streamlit page nav)
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
-
-    st.divider()
-
+    # Brand
     st.markdown(
         """
         <div class="sidebar-brand">
-            <div class="sidebar-brand-name">🔧 TRACE AI</div>
+            <div class="sidebar-brand-name">TRACE AI</div>
             <div class="sidebar-brand-version">v0.1.0 Pilot Build</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    st.divider()
+
+    # Navigation
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
 
     st.divider()
 

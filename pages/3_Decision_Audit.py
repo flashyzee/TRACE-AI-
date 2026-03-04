@@ -24,7 +24,9 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+    html, body { font-family: 'Inter', sans-serif; }
+    [data-testid="stSidebarNav"] { display: none; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
 
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(16px); }
@@ -52,7 +54,7 @@ st.markdown(
     /* ── Sidebar ────────────────────────────────────────────────────────── */
     .sidebar-brand {
         text-align: center;
-        padding: 0.5rem 0 0.8rem;
+        padding: 0.1rem 0 0.15rem;
     }
     .sidebar-brand-name {
         font-size: 1.4rem;
@@ -271,6 +273,7 @@ st.markdown(
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
+    # Brand
     st.markdown(
         """
         <div class="sidebar-brand">
@@ -283,11 +286,38 @@ with st.sidebar:
 
     st.divider()
 
-    is_online = check_connectivity()
+    # Navigation
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
+
+    st.divider()
+
+    # Simulated Offline Mode
+    from backend.sync import get_sync_stats, get_last_sync_time, format_time_ago
+
+    real_online = check_connectivity()
+
+    was_simulating = st.session_state.get("simulate_offline", False)
+    simulate_offline = st.toggle(
+        "Simulate Offline Mode",
+        value=was_simulating,
+        help="Toggle to simulate offline behavior for demo purposes",
+    )
+    st.session_state.simulate_offline = simulate_offline
+
+    if was_simulating and not simulate_offline:
+        st.session_state.show_reconnect_sync = True
+
+    is_online = real_online and not simulate_offline
+    st.session_state.is_online = is_online
+
     if is_online:
         st.markdown(
             '<div class="sync-indicator sync-online">'
-            '<span class="sync-dot"></span> Online'
+            '<span class="sync-dot"></span> Cloud Sync: Online'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -299,13 +329,31 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    st.divider()
+    stats = get_sync_stats()
+    pending_total = stats["cases_pending"] + stats["decisions_pending"]
+    synced_total = stats["cases_synced"] + stats["decisions_synced"]
+    last_sync = get_last_sync_time()
+    last_sync_text = format_time_ago(last_sync)
 
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
+    st.markdown(
+        f"""
+        <div class="sync-stats-card">
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Last sync</span>
+                <span class="sync-stat-value">{last_sync_text}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Pending</span>
+                <span class="sync-stat-value" style="color:{'#F59E0B' if pending_total > 0 else '#10B981'}">{pending_total}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Total synced</span>
+                <span class="sync-stat-value">{synced_total}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ── Data Loading ─────────────────────────────────────────────────────────────
@@ -627,22 +675,21 @@ with tab_timeline:
                         f'margin-left:0.5rem;">{model}</span>'
                     )
 
-                timeline_html += f"""
-                <div class="timeline-entry" style="animation-delay:{i * 0.05}s;">
-                    <div class="timeline-dot" style="background:{dot_color};"></div>
-                    <div class="timeline-header">
-                        <div>
-                            <span class="timeline-action">{action_label}</span>
-                            <span class="timeline-agent-badge {badge_class}">{agent.replace('_', ' ')}</span>
-                            {human_html}
-                            {model_html}
-                        </div>
-                        <span class="timeline-time">{ts}</span>
-                    </div>
-                    {conf_html}
-                    <div class="timeline-detail">{summary}</div>
-                </div>
-                """
+                timeline_html += (
+                    f'<div class="timeline-entry" style="animation-delay:{i * 0.05}s;">'
+                    f'<div class="timeline-dot" style="background:{dot_color};"></div>'
+                    f'<div class="timeline-header">'
+                    f'<div>'
+                    f'<span class="timeline-action">{action_label}</span>'
+                    f'<span class="timeline-agent-badge {badge_class}">{agent.replace("_", " ")}</span>'
+                    f'{human_html}{model_html}'
+                    f'</div>'
+                    f'<span class="timeline-time">{ts}</span>'
+                    f'</div>'
+                    f'{conf_html}'
+                    f'<div class="timeline-detail">{summary}</div>'
+                    f'</div>'
+                )
 
             timeline_html += "</div>"
             st.markdown(timeline_html, unsafe_allow_html=True)

@@ -122,7 +122,7 @@ st.markdown(
     /* ── Sidebar Styling ───────────────────────────────────────────────── */
     .sidebar-brand {
         text-align: center;
-        padding: 0.5rem 0 0.8rem;
+        padding: 0.1rem 0 0.15rem;
     }
     .sidebar-brand-name {
         font-size: 1.4rem;
@@ -419,6 +419,7 @@ st.markdown(
 
     /* ── Hide Streamlit default page nav ───────────────────────────────── */
     [data-testid="stSidebarNav"] { display: none; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
 
     /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
@@ -581,19 +582,11 @@ def get_current_confidence():
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Navigation at top (replaces default Streamlit page nav)
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
-
-    st.divider()
-
+    # Brand
     st.markdown(
         """
         <div class="sidebar-brand">
-            <div class="sidebar-brand-name">🔧 TRACE AI</div>
+            <div class="sidebar-brand-name">TRACE AI</div>
             <div class="sidebar-brand-version">v0.1.0 Pilot Build</div>
         </div>
         """,
@@ -602,80 +595,17 @@ with st.sidebar:
 
     st.divider()
 
-    # Sync status
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    from backend.sync import (
-        check_connectivity, get_sync_stats, get_last_sync_time,
-        get_pending_count, format_time_ago, sync_to_cloud, log_sync_event,
-    )
-
-    real_online = check_connectivity()
-
-    # Simulate offline toggle for demo
-    was_simulating = st.session_state.get("simulate_offline", False)
-    simulate_offline = st.toggle(
-        "Simulate Offline Mode",
-        value=was_simulating,
-        help="Toggle to simulate offline behavior for demo purposes",
-    )
-    st.session_state.simulate_offline = simulate_offline
-
-    # Detect reconnection (toggle OFF after being ON)
-    if was_simulating and not simulate_offline:
-        st.session_state.show_reconnect_sync = True
-
-    # Effective online status
-    is_online = real_online and not simulate_offline
-    st.session_state.is_online = is_online
-
-    if is_online:
-        st.markdown(
-            '<div class="sync-indicator sync-online">'
-            '<span class="sync-dot"></span> Cloud Sync: Online'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            '<div class="sync-indicator sync-offline">'
-            '<span class="sync-dot"></span> Offline (Local Mode)'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-    # Sync stats
-    stats = get_sync_stats()
-    pending_total = stats["cases_pending"] + stats["decisions_pending"]
-    synced_total = stats["cases_synced"] + stats["decisions_synced"]
-    last_sync = get_last_sync_time()
-    last_sync_text = format_time_ago(last_sync)
-
-    st.markdown(
-        f"""
-        <div class="sync-stats-card">
-            <div class="sync-stat-row">
-                <span class="sync-stat-label">Last sync</span>
-                <span class="sync-stat-value">{last_sync_text}</span>
-            </div>
-            <div class="sync-stat-row">
-                <span class="sync-stat-label">Pending</span>
-                <span class="sync-stat-value" style="color:{'#F59E0B' if pending_total > 0 else '#10B981'}">{pending_total}</span>
-            </div>
-            <div class="sync-stat-row">
-                <span class="sync-stat-label">Total synced</span>
-                <span class="sync-stat-value">{synced_total}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.caption("LLM runs on device via Ollama. No cloud needed for diagnosis.")
+    # Navigation
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
 
     st.divider()
 
     # Vehicle Info Form
-    st.markdown("### 🔧 Vehicle Info")
+    st.markdown("### Vehicle Info")
     st.caption("Fill in details before starting the chat.")
 
     with st.form("vehicle_form"):
@@ -704,10 +634,10 @@ with st.sidebar:
         st.session_state.evidence_answers = {}
         st.rerun()
 
-    st.divider()
-
     # Session info card (only when active)
     if st.session_state.chat_phase != "idle":
+        st.divider()
+
         fc = st.session_state.get("fault_code", "")
         fc_info = FAULT_CODES.get(fc, {})
         severity = fc_info.get("severity", "N/A")
@@ -761,6 +691,74 @@ with st.sidebar:
                 unsafe_allow_html=True,
             )
 
+    st.divider()
+
+    # Simulated Offline Mode
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    from backend.sync import (
+        check_connectivity, get_sync_stats, get_last_sync_time,
+        get_pending_count, format_time_ago, sync_to_cloud, log_sync_event,
+    )
+
+    real_online = check_connectivity()
+
+    was_simulating = st.session_state.get("simulate_offline", False)
+    simulate_offline = st.toggle(
+        "Simulate Offline Mode",
+        value=was_simulating,
+        help="Toggle to simulate offline behavior for demo purposes",
+    )
+    st.session_state.simulate_offline = simulate_offline
+
+    if was_simulating and not simulate_offline:
+        st.session_state.show_reconnect_sync = True
+
+    is_online = real_online and not simulate_offline
+    st.session_state.is_online = is_online
+
+    if is_online:
+        st.markdown(
+            '<div class="sync-indicator sync-online">'
+            '<span class="sync-dot"></span> Cloud Sync: Online'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div class="sync-indicator sync-offline">'
+            '<span class="sync-dot"></span> Offline (Local Mode)'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+    stats = get_sync_stats()
+    pending_total = stats["cases_pending"] + stats["decisions_pending"]
+    synced_total = stats["cases_synced"] + stats["decisions_synced"]
+    last_sync = get_last_sync_time()
+    last_sync_text = format_time_ago(last_sync)
+
+    st.markdown(
+        f"""
+        <div class="sync-stats-card">
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Last sync</span>
+                <span class="sync-stat-value">{last_sync_text}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Pending</span>
+                <span class="sync-stat-value" style="color:{'#F59E0B' if pending_total > 0 else '#10B981'}">{pending_total}</span>
+            </div>
+            <div class="sync-stat-row">
+                <span class="sync-stat-label">Total synced</span>
+                <span class="sync-stat-value">{synced_total}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.caption("LLM runs on device via Ollama. No cloud needed for diagnosis.")
+
 
 
 # ── Breadcrumb ──────────────────────────────────────────────────────────────
@@ -776,7 +774,6 @@ st.markdown(
 # ── Page Header ─────────────────────────────────────────────────────────────
 st.markdown(
     '<div class="page-header">'
-    '<span style="font-size:1.6rem">💬</span>'
     '<span class="page-header-title">Technician Chatbot</span>'
     '<span class="page-header-badge">AI Diagnosis Assistant</span>'
     '</div>',
@@ -1080,7 +1077,7 @@ elif st.session_state.chat_phase == "idle":
     st.markdown(
         """
         <div style="text-align:center; padding:3rem 1rem; animation: fadeInUp 0.5s ease-out;">
-            <div style="font-size:3rem; margin-bottom:1rem;">🔧</div>
+            <div style="height:1rem;"></div>
             <div style="font-size:1.1rem; color:#E5E7EB; font-weight:600; margin-bottom:0.5rem;">
                 Ready to Diagnose
             </div>

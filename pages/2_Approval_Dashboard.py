@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta
 import random
 
-st.set_page_config(page_title="TRACE AI Dashboard", page_icon="📋", layout="wide")
+st.set_page_config(page_title="TRACE AI Dashboard", layout="wide")
 
 # ── Database Setup ───────────────────────────────────────────────────────────
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dashboard.db")
@@ -292,7 +292,7 @@ st.markdown(
     /* ── Sidebar ────────────────────────────────────────────────────────── */
     .sidebar-brand {
         text-align: center;
-        padding: 0.5rem 0 0.8rem;
+        padding: 0.1rem 0 0.15rem;
     }
     .sidebar-brand-name {
         font-size: 1.4rem;
@@ -643,6 +643,7 @@ st.markdown(
 
     /* ── Hide Streamlit default page nav ───────────────────────────────── */
     [data-testid="stSidebarNav"] { display: none; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
 
     /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
@@ -671,19 +672,11 @@ st.markdown(
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Navigation at top (replaces default Streamlit page nav)
-    st.markdown("**Navigation**")
-    st.page_link("ui.py", label="Home")
-    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
-    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
-    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
-
-    st.divider()
-
+    # Brand
     st.markdown(
         """
         <div class="sidebar-brand">
-            <div class="sidebar-brand-name">🔧 TRACE AI</div>
+            <div class="sidebar-brand-name">TRACE AI</div>
             <div class="sidebar-brand-version">v0.1.0 Pilot Build</div>
         </div>
         """,
@@ -692,7 +685,27 @@ with st.sidebar:
 
     st.divider()
 
-    # Sync status
+    # Navigation
+    st.markdown("**Navigation**")
+    st.page_link("ui.py", label="Home")
+    st.page_link("pages/1_Technician_Chatbot.py", label="Technician Chatbot")
+    st.page_link("pages/2_Approval_Dashboard.py", label="Approval Dashboard")
+    st.page_link("pages/3_Decision_Audit.py", label="Decision Audit")
+
+    st.divider()
+
+    # Dashboard Settings
+    st.markdown("### Dashboard Settings")
+    role = st.selectbox(
+        "Your Role",
+        ["Fleet Manager", "Senior Technician", "Junior Technician"],
+        help="Different roles see different information emphasis.",
+    )
+    st.session_state["dashboard_role"] = role
+
+    st.divider()
+
+    # Simulated Offline Mode
     import sys
     import time as _time
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -704,7 +717,6 @@ with st.sidebar:
 
     real_online = check_connectivity()
 
-    # Simulate offline toggle for demo
     was_simulating = st.session_state.get("simulate_offline", False)
     simulate_offline = st.toggle(
         "Simulate Offline Mode",
@@ -713,11 +725,9 @@ with st.sidebar:
     )
     st.session_state.simulate_offline = simulate_offline
 
-    # Detect reconnection (toggle OFF after being ON)
     if was_simulating and not simulate_offline:
         st.session_state.show_reconnect_sync = True
 
-    # Effective online status
     is_online = real_online and not simulate_offline
     st.session_state.is_online = is_online
 
@@ -736,7 +746,6 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
 
-    # Sync stats
     stats = get_sync_stats()
     pending_total = stats["cases_pending"] + stats["decisions_pending"]
     synced_total = stats["cases_synced"] + stats["decisions_synced"]
@@ -778,16 +787,6 @@ with st.sidebar:
     elif not is_online and pending_total > 0:
         st.info(f"{pending_total} record(s) queued. Go online to sync.")
 
-    st.divider()
-
-    st.markdown("### 📋 Dashboard Settings")
-    role = st.selectbox(
-        "Your Role",
-        ["Fleet Manager", "Senior Technician", "Junior Technician"],
-        help="Different roles see different information emphasis.",
-    )
-    st.session_state["dashboard_role"] = role
-
 
 
 # ── Breadcrumb ──────────────────────────────────────────────────────────────
@@ -803,7 +802,6 @@ st.markdown(
 # ── Page Header ─────────────────────────────────────────────────────────────
 st.markdown(
     '<div class="page-header">'
-    '<span style="font-size:1.6rem">📋</span>'
     '<span class="page-header-title">Approval Dashboard</span>'
     '<span class="page-header-badge">' + role + '</span>'
     '</div>',
@@ -818,7 +816,6 @@ _is_online = st.session_state.get("is_online", True)
 if not _is_online:
     st.markdown(
         '<div class="offline-banner">'
-        '<span class="offline-banner-icon">📡</span>'
         '<span>Offline Mode: All data saved locally. Will sync when connection is restored.</span>'
         '</div>',
         unsafe_allow_html=True,
@@ -829,7 +826,6 @@ if st.session_state.get("show_reconnect_sync"):
     if _pending > 0:
         st.markdown(
             '<div class="online-banner">'
-            '<span class="offline-banner-icon">🔄</span>'
             '<span>Connection restored! Syncing offline data...</span>'
             '</div>',
             unsafe_allow_html=True,
@@ -856,7 +852,6 @@ if st.session_state.get("show_reconnect_sync"):
     else:
         st.markdown(
             '<div class="online-banner">'
-            '<span class="offline-banner-icon">✅</span>'
             '<span>Back online! All records are already synced.</span>'
             '</div>',
             unsafe_allow_html=True,
@@ -874,27 +869,27 @@ st.markdown(
     f"""
     <div class="summary-grid">
         <div class="summary-card summary-card-total" style="animation-delay:0.05s;">
-            <div class="summary-icon">📊</div>
+            <div class="summary-icon"></div>
             <div class="summary-value summary-value-total">{len(all_cases)}</div>
             <div class="summary-label">Total Cases</div>
         </div>
         <div class="summary-card summary-card-pending" style="animation-delay:0.1s;">
-            <div class="summary-icon">🔶</div>
+            <div class="summary-icon"></div>
             <div class="summary-value summary-value-pending">{len(pending)}</div>
             <div class="summary-label">Pending</div>
         </div>
         <div class="summary-card summary-card-approved" style="animation-delay:0.15s;">
-            <div class="summary-icon">✅</div>
+            <div class="summary-icon"></div>
             <div class="summary-value summary-value-approved">{len(approved)}</div>
             <div class="summary-label">Approved</div>
         </div>
         <div class="summary-card summary-card-rejected" style="animation-delay:0.2s;">
-            <div class="summary-icon">❌</div>
+            <div class="summary-icon"></div>
             <div class="summary-value summary-value-rejected">{len(rejected)}</div>
             <div class="summary-label">Rejected</div>
         </div>
         <div class="summary-card summary-card-cost" style="animation-delay:0.25s;">
-            <div class="summary-icon">💰</div>
+            <div class="summary-icon"></div>
             <div class="summary-value summary-value-cost">${total_cost:,}</div>
             <div class="summary-label">Pending Cost</div>
         </div>
@@ -905,7 +900,7 @@ st.markdown(
 
 # ── Tabs: Pending | History | Sync Status ───────────────────────────────────
 tab_pending, tab_history, tab_sync = st.tabs(
-    ["🔶 Pending Approval", "📜 Decision History", "🔄 Sync Status"]
+    ["Pending Approval", "Decision History", "Sync Status"]
 )
 
 
@@ -1022,9 +1017,9 @@ def render_case_card(case, allow_actions=False):
     reason = case.get("escalation_reason", "")
     if reason:
         if "safety" in reason.lower() or "fire" in reason.lower():
-            st.error(f"⚠️ {reason}")
+            st.error(reason)
         else:
-            st.warning(f"🔶 {reason}")
+            st.warning(reason)
 
     # Evidence section
     with st.expander("Evidence Collected", expanded=(status == "pending")):
@@ -1065,7 +1060,7 @@ def render_case_card(case, allow_actions=False):
     # Decision info (for history)
     if status in ("approved", "rejected"):
         decided = case.get("decided_at", "")
-        status_icon = "✅" if status == "approved" else "❌"
+        status_icon = ""
         status_color = "#10B981" if status == "approved" else "#EF4444"
 
         decision_html = f"""
@@ -1113,7 +1108,7 @@ def render_case_card(case, allow_actions=False):
         btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
         with btn_col1:
             if st.button(
-                "✅ Approve",
+                "Approve",
                 key=f"approve_{case['session_id']}",
                 type="primary",
                 use_container_width=True,
@@ -1126,7 +1121,7 @@ def render_case_card(case, allow_actions=False):
                 st.rerun()
         with btn_col2:
             if st.button(
-                "❌ Reject",
+                "Reject",
                 key=f"reject_{case['session_id']}",
                 use_container_width=True,
             ):
@@ -1147,7 +1142,6 @@ with tab_pending:
         st.markdown(
             """
             <div style="text-align:center; padding:3rem 1rem;">
-                <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
                 <div style="font-size:1.1rem; color:#10B981; font-weight:600;">All Clear</div>
                 <div style="font-size:0.9rem; color:#9CA3AF;">No cases pending approval at this time.</div>
             </div>
@@ -1163,7 +1157,6 @@ with tab_pending:
 with tab_history:
     st.markdown(
         '<div class="page-header" style="margin-bottom:0.8rem;">'
-        '<span style="font-size:1.2rem">📜</span>'
         '<span style="font-size:1.1rem; font-weight:700; color:#E5E7EB;">Decision History & Audit Trail</span>'
         '</div>',
         unsafe_allow_html=True,
@@ -1215,7 +1208,6 @@ with tab_history:
         st.markdown(
             """
             <div style="text-align:center; padding:2rem 1rem;">
-                <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
                 <div style="font-size:0.95rem; color:#9CA3AF;">No decisions match your filters.</div>
             </div>
             """,
@@ -1230,7 +1222,6 @@ with tab_history:
 with tab_sync:
     st.markdown(
         '<div class="page-header" style="margin-bottom:0.8rem;">'
-        '<span style="font-size:1.2rem">🔄</span>'
         '<span style="font-size:1.1rem; font-weight:700; color:#E5E7EB;">'
         'Sync Status & History</span>'
         '</div>',
@@ -1254,7 +1245,7 @@ with tab_sync:
             f"""
             <div class="summary-card" style="border-top: 3px solid {status_color};">
                 <div class="summary-icon" style="font-size:1.6rem;">
-                    {'🟢' if _eff_online else '🟠'}
+                    {'Online' if _eff_online else 'Offline'}
                 </div>
                 <div class="summary-value" style="color:{status_color}; font-size:1.3rem;">
                     {status_label}
@@ -1268,7 +1259,7 @@ with tab_sync:
         st.markdown(
             f"""
             <div class="summary-card" style="border-top: 3px solid {'#F59E0B' if _pending > 0 else '#10B981'};">
-                <div class="summary-icon">📤</div>
+                <div class="summary-icon"></div>
                 <div class="summary-value" style="color:{'#F59E0B' if _pending > 0 else '#10B981'}; font-size:1.3rem;">
                     {_pending}
                 </div>
@@ -1281,7 +1272,7 @@ with tab_sync:
         st.markdown(
             f"""
             <div class="summary-card" style="border-top: 3px solid #10B981;">
-                <div class="summary-icon">✅</div>
+                <div class="summary-icon"></div>
                 <div class="summary-value" style="color:#10B981; font-size:1.3rem;">
                     {_synced}
                 </div>
@@ -1294,7 +1285,7 @@ with tab_sync:
         st.markdown(
             f"""
             <div class="summary-card" style="border-top: 3px solid #3B82F6;">
-                <div class="summary-icon">🕐</div>
+                <div class="summary-icon"></div>
                 <div class="summary-value" style="color:#3B82F6; font-size:1rem;">
                     {_last_text}
                 </div>
@@ -1349,7 +1340,7 @@ with tab_sync:
                 ts_ago = format_time_ago(ts)
 
                 icon_class = "sync-history-icon-ok" if errs == 0 else "sync-history-icon-err"
-                icon = "✅" if errs == 0 else "⚠️"
+                icon = ""
                 label = "Reconnect sync" if "reconnect" in evt_type else "Cloud sync"
                 detail = f"{cases_s} cases, {decs_s} decisions"
                 if errs > 0:
