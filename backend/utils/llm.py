@@ -1,31 +1,39 @@
 # utils/llm.py
 """
-Ollama LLM connection with automatic fallback.
-Tries Llama 3.1 first, falls back to Mistral if unavailable.
+Groq Cloud LLM connection with automatic fallback.
+Tries Llama 3.1 8B first, falls back to Mixtral 8x7B if unavailable.
+Uses the same open-source models previously run locally via Ollama,
+now hosted on Groq's cloud for deployment flexibility.
 """
 
-from langchain_ollama import OllamaLLM
+import os
+from langchain_groq import ChatGroq
 
-OLLAMA_BASE_URL = "http://localhost:11434"
-PRIMARY_MODEL = "llama3.1"
-FALLBACK_MODEL = "mistral"
+PRIMARY_MODEL = "llama-3.1-8b-instant"
+FALLBACK_MODEL = "mixtral-8x7b-32768"
 
 
-def get_llm() -> tuple[OllamaLLM, str]:
+def get_llm() -> tuple[ChatGroq, str]:
     """
     Returns (llm_instance, model_name_used).
-    Tries Llama 3.1 first, falls back to Mistral if unavailable.
+    Tries Llama 3.1 first, falls back to Mixtral if unavailable.
+    Requires GROQ_API_KEY environment variable.
     """
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY environment variable is not set. "
+            "Get a free key at https://console.groq.com/keys"
+        )
+
     try:
-        llm = OllamaLLM(model=PRIMARY_MODEL, base_url=OLLAMA_BASE_URL)
-        llm.invoke("test")  # quick ping to confirm model is loaded
+        llm = ChatGroq(model=PRIMARY_MODEL, api_key=api_key, temperature=0)
         return llm, PRIMARY_MODEL
     except Exception:
         try:
-            llm = OllamaLLM(model=FALLBACK_MODEL, base_url=OLLAMA_BASE_URL)
-            llm.invoke("test")
+            llm = ChatGroq(model=FALLBACK_MODEL, api_key=api_key, temperature=0)
             return llm, FALLBACK_MODEL
         except Exception as e:
             raise RuntimeError(
-                f"No LLM available. Is Ollama running? Error: {e}"
+                f"No LLM available via Groq. Check your API key. Error: {e}"
             )

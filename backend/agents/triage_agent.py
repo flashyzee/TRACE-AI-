@@ -6,6 +6,7 @@ LangGraph node function: reads from and writes to TraceState.
 
 import json
 from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from ..orchestrator.state import TraceState
 from ..utils.llm import get_llm
 
@@ -68,7 +69,7 @@ def triage_agent(state: TraceState) -> TraceState:
         template=TRIAGE_PROMPT,
     )
 
-    chain = prompt | llm
+    chain = prompt | llm | StrOutputParser()
 
     try:
         raw_response = chain.invoke({
