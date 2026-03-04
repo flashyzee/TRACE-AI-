@@ -777,7 +777,7 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
-    st.caption("LLM runs on device via Ollama. No cloud needed for diagnosis.")
+    st.caption("Powered by Llama 3.1 on Groq Cloud.")
 
 
 
@@ -910,11 +910,11 @@ if st.session_state.chat_phase == "triage" and not any(
     fc_info = FAULT_CODES.get(fc, {})
 
     add_user_message(
-        f"**New case submitted**\n\n"
-        f"- **Fault code:** {fc}  |  {fc_info.get('name', 'Unknown')}\n"
-        f"- **Vehicle:** {st.session_state.vehicle_id}\n"
-        f"- **Mileage:** {st.session_state.mileage:,} mi\n"
-        f"- **Symptoms:** {st.session_state.symptoms}"
+        f"<b>New case submitted</b><br><br>"
+        f"&bull; <b>Fault code:</b> {fc} | {fc_info.get('name', 'Unknown')}<br>"
+        f"&bull; <b>Vehicle:</b> {st.session_state.vehicle_id}<br>"
+        f"&bull; <b>Mileage:</b> {st.session_state.mileage:,} mi<br>"
+        f"&bull; <b>Symptoms:</b> {st.session_state.symptoms}"
     )
 
     # Try real backend (LLM triage), fall back to mock data
@@ -943,26 +943,29 @@ if st.session_state.chat_phase == "triage" and not any(
         results = MOCK_TRIAGE_RESULTS.get(fc)
 
     if results:
-        triage_text = "**Triage Complete: Top 3 Probable Causes**\n\n"
+        def _conf_color(c):
+            return "#10B981" if c >= 0.7 else "#F59E0B" if c >= 0.4 else "#EF4444"
+
+        triage_text = "<b>Triage Complete: Top 3 Probable Causes</b><br><br>"
         for i, r in enumerate(results, 1):
-            bar_fill = int(r["confidence"] * 20)
-            bar = "█" * bar_fill + "░" * (20 - bar_fill)
+            conf = r["confidence"]
+            cc = _conf_color(conf)
             triage_text += (
-                f"**{i}. {r['cause']}**\n"
-                f"`{bar}` {r['confidence']:.0%} confidence\n"
-                f"_{r['explanation']}_\n"
-                f"Urgency: **{r['urgency']}** | Est. cost: **${r['estimated_cost_usd']:,}**\n\n"
+                f"<b>{i}. {r['cause']}</b><br>"
+                f"<span style='color:{cc}; font-weight:700'>{conf:.0%} confidence</span><br>"
+                f"<i style='color:#9CA3AF'>{r['explanation']}</i><br>"
+                f"Urgency: <b>{r['urgency']}</b> | Est. cost: <b>${r['estimated_cost_usd']:,}</b><br><br>"
             )
         triage_text += (
-            "I need to ask you a few follow up questions to refine this diagnosis. "
+            "I need to ask you a few follow-up questions to refine this diagnosis. "
             "Ready when you are."
         )
         add_bot_message(triage_text)
         st.session_state.triage_data = results
     else:
         add_bot_message(
-            f"I don't have specialized triage data for **{fc}** yet. "
-            f"Let me ask some general follow up questions."
+            f"I don't have specialized triage data for <b>{fc}</b> yet. "
+            f"Let me ask some general follow-up questions."
         )
         st.session_state.triage_data = [
             {"cause": "General diagnosis needed", "confidence": 0.50, "urgency": "medium", "estimated_cost_usd": 0}
@@ -995,8 +998,8 @@ if st.session_state.chat_phase == "evidence":
     ):
         q = questions[idx]
         q_text = (
-            f"**Question {idx + 1} of {len(questions)}:** {q['question']}\n\n"
-            f"_Why we ask: {q['why_we_ask']}_"
+            f"<b>Question {idx + 1} of {len(questions)}:</b> {q['question']}<br><br>"
+            f"<i style='color:#9CA3AF'>Why we ask: {q['why_we_ask']}</i>"
         )
         add_bot_message(q_text)
         st.rerun()
@@ -1106,23 +1109,31 @@ if st.session_state.chat_phase == "result" and not any(
 
     base_conf = top.get("confidence", 0.50)
 
-    summary = "**Evidence Summary & Updated Diagnosis**\n\n"
-    summary += "| Question | Your Answer |\n|---|---|\n"
+    def _conf_color_summary(c):
+        return "#10B981" if c >= 0.7 else "#F59E0B" if c >= 0.4 else "#EF4444"
+
+    summary = "<b>Evidence Summary &amp; Updated Diagnosis</b><br><br>"
     for q in questions:
         ans = answers.get(q["id"], "N/A")
-        summary += f"| {q['question'][:50]}... | **{ans}** |\n"
+        summary += f"&bull; {q['question'][:50]}... &mdash; <b>{ans}</b><br>"
 
-    summary += f"\n\n**Updated confidence:** {base_conf:.0%} -> **{updated_conf:.0%}**\n"
-    summary += f"**Top cause:** {top.get('cause', 'Unknown')}\n\n"
+    uc_color = _conf_color_summary(updated_conf)
+    bc_color = _conf_color_summary(base_conf)
+    summary += (
+        f"<br><b>Updated confidence:</b> "
+        f"<span style='color:{bc_color}'>{base_conf:.0%}</span> &rarr; "
+        f"<span style='color:{uc_color}; font-weight:700'>{updated_conf:.0%}</span><br>"
+    )
+    summary += f"<b>Top cause:</b> {top.get('cause', 'Unknown')}<br><br>"
 
     if safety_flag:
         summary += (
-            "**SAFETY ALERT:** Visible fuel leak detected. "
-            "This case has been **automatically escalated** to a manager for approval.\n\n"
+            "<span style='color:#EF4444; font-weight:700'>SAFETY ALERT:</span> Visible fuel leak detected. "
+            "This case has been <b>automatically escalated</b> to a manager for approval.<br><br>"
         )
     elif needs_escalation:
         if escalation_reason:
-            summary += f"**Escalation required:** {escalation_reason}\n\n"
+            summary += f"<span style='color:#F59E0B; font-weight:700'>Escalation required:</span> {escalation_reason}<br><br>"
         else:
             reason_parts = []
             if updated_conf < 0.70:
@@ -1130,14 +1141,14 @@ if st.session_state.chat_phase == "result" and not any(
             if top.get("estimated_cost_usd", 0) > 500:
                 reason_parts.append(f"estimated cost ${top['estimated_cost_usd']:,}")
             summary += (
-                f"**Escalation required:** {', '.join(reason_parts)}. "
-                f"This case has been sent to the **Approval Dashboard** for manager review.\n\n"
+                f"<span style='color:#F59E0B; font-weight:700'>Escalation required:</span> {', '.join(reason_parts)}. "
+                f"This case has been sent to the <b>Approval Dashboard</b> for manager review.<br><br>"
             )
     else:
-        summary += "**Auto approved:** confidence is high and cost is within limits.\n\n"
+        summary += "<span style='color:#10B981; font-weight:700'>Auto approved:</span> confidence is high and cost is within limits.<br><br>"
 
     summary += (
-        "You can view the case status on the **Approval Dashboard** page. "
+        "You can view the case status on the <b>Approval Dashboard</b> page. "
         "Thank you for providing the evidence!"
     )
 
@@ -1151,8 +1162,8 @@ if st.session_state.chat_phase == "done":
     if user_input:
         add_user_message(user_input)
         add_bot_message(
-            "Thanks for the follow up. In the full version, I'd use the LLM to answer. "
-            "For now, please check the **Approval Dashboard** for case status, or start a "
+            "Thanks for the follow-up. In the full version, I'd use the LLM to answer. "
+            "For now, please check the <b>Approval Dashboard</b> for case status, or start a "
             "new diagnosis from the sidebar."
         )
         st.rerun()

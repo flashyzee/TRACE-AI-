@@ -1,0 +1,19 @@
+# TRACE AI — Python dependencies for Streamlit Cloud deployment
+# Install locally: pip install -r requirements.txt
+
+# ML / Orchestration layer
+langgraph>=0.2
+langgraph-checkpoint-sqlite>=1.0
+langchain-groq>=0.2
+langchain-core>=0.3
+pydantic>=2.0
+
+# Backend layer (FastAPI)
+fastapi
+uvicorn
+requests
+
+# Frontend layer (Streamlit)
+streamlit
+pandas
+Pillow
