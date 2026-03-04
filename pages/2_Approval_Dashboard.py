@@ -13,6 +13,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data",
 
 def init_dashboard_db():
     """Create the dashboard tables if they don't exist."""
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
         """
@@ -718,7 +719,7 @@ with st.sidebar:
     else:
         st.markdown(
             '<div class="sync-indicator sync-offline">'
-            '<span class="sync-dot"></span> Offline — Local Mode'
+            '<span class="sync-dot"></span> Offline (Local Mode)'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -813,7 +814,7 @@ if not _is_online:
     st.markdown(
         '<div class="offline-banner">'
         '<span class="offline-banner-icon">📡</span>'
-        '<span>Offline Mode — All data saved locally. Will sync when connection is restored.</span>'
+        '<span>Offline Mode: All data saved locally. Will sync when connection is restored.</span>'
         '</div>',
         unsafe_allow_html=True,
     )

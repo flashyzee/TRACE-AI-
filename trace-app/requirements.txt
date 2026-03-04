@@ -1,17 +1,18 @@
-# TRACE AI - Python dependencies
+# TRACE AI  Python dependencies
 # Install: pip install -r requirements.txt
 
-# ML layer
+# ML / Orchestration layer
 langgraph>=0.2
 langgraph-checkpoint-sqlite>=1.0
 langchain-ollama>=0.3
 langchain-core>=0.3
 pydantic>=2.0
 
-# Backend layer
+# Backend layer (FastAPI)
 fastapi
 uvicorn
-sqlmodel
-llama-cpp-python
-rasa
 requests
+
+# Frontend layer (Streamlit)
+streamlit
+pandas

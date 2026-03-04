@@ -3,6 +3,7 @@ import json
 import os
 
 _DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "trace_ai.db")
+os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
 conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 

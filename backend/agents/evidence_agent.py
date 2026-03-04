@@ -57,7 +57,7 @@ def evidence_agent(state: TraceState) -> TraceState:
         safety_flag = True
         state["escalation_reason"] = (
             "Safety risk: visible fuel leak detected. "
-            "Fire hazard — immediate escalation required."
+            "Fire hazard, immediate escalation required."
         )
 
     # Rule 2: Very low fuel pressure → confirms pump or filter issue
