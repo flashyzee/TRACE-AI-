@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import random
+import os
 from datetime import datetime
 
 st.set_page_config(page_title="TRACE AI — Chatbot", page_icon="💬", layout="wide")
@@ -175,7 +176,10 @@ with st.sidebar:
     st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
 
     st.divider()
-    is_online = st.session_state.get("is_online", False)
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    from backend.sync import check_connectivity
+    is_online = check_connectivity()
     if is_online:
         st.success("ONLINE")
     else:

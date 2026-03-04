@@ -178,9 +178,12 @@ with st.sidebar:
     st.page_link("pages/2_Approval_Dashboard.py", label="Dashboard", icon="📋")
 
     st.divider()
-    is_online = st.session_state.get("is_online", False)
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
+    from backend.sync import check_connectivity
+    is_online = check_connectivity()
     if is_online:
         st.success("ONLINE")
     else:
         st.warning("OFFLINE — Local mode")
-    st.caption("Toggle connectivity from the Dashboard page.")
+    st.caption("Connectivity detected automatically.")

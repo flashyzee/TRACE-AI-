@@ -315,7 +315,7 @@ with st.sidebar:
 
     role = st.selectbox(
         "Your Role",
-        ["Fleet Manager", "Senior Technician"],
+        ["Fleet Manager", "Senior Technician", "Junior Technician"],
         help="Different roles see different information emphasis.",
     )
     st.session_state["dashboard_role"] = role
@@ -330,24 +330,17 @@ with st.sidebar:
     st.divider()
     st.markdown("### Cloud Sync")
 
-    if "is_online" not in st.session_state:
-        st.session_state.is_online = False  # Start offline for demo
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    from backend.sync import check_connectivity, get_sync_stats, sync_to_cloud
 
-    is_online = st.toggle(
-        "Online Mode",
-        value=st.session_state.is_online,
-        key="online_toggle",
-    )
+    is_online = check_connectivity()
     st.session_state.is_online = is_online
 
     if is_online:
         st.success("ONLINE — Connected to cloud")
     else:
         st.warning("OFFLINE — Working locally")
-
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    from backend.sync import get_sync_stats, sync_to_cloud
 
     stats = get_sync_stats()
     pending_total = stats["cases_pending"] + stats["decisions_pending"]
@@ -466,6 +459,20 @@ def render_case_card(case, allow_actions=False):
                 except ValueError:
                     st.markdown(f"**Submitted:** {created[:16]}")
             st.caption(f"Session: {case.get('session_id', '—')}")
+    elif role == "Junior Technician":
+        # Junior view: simplified, guidance-focused
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"**Vehicle:** {case.get('vehicle_id', '—')}")
+            st.caption(f"Mileage: {case.get('mileage', 0):,} mi")
+        with c2:
+            st.markdown(f"**Top Cause:** {case.get('top_cause', '—')}")
+            st.caption(f"Fault: {case['fault_code']}")
+        with c3:
+            st.markdown(f"**Urgency:** {urgency.upper()}")
+            conf = case.get("updated_confidence") or case.get("confidence", 0)
+            color = "#10B981" if conf >= 0.7 else "#F59E0B" if conf >= 0.5 else "#EF4444"
+            st.markdown(f"**Confidence:** <span style='color:{color}'>{conf:.0%}</span>", unsafe_allow_html=True)
     else:
         # Senior Technician view: technical focus
         c1, c2, c3 = st.columns(3)
@@ -502,7 +509,7 @@ def render_case_card(case, allow_actions=False):
         else:
             st.caption("No evidence data available.")
 
-    if role == "Senior Technician" or status != "pending":
+    if role in ("Senior Technician", "Junior Technician") or status != "pending":
         with st.expander("🔧 Proposed Repair Steps"):
             if repair_steps:
                 for step in repair_steps:
@@ -520,8 +527,12 @@ def render_case_card(case, allow_actions=False):
         if case.get("reviewer_notes"):
             st.info(f"💬 Notes: {case['reviewer_notes']}")
 
+    # Read-only notice for junior technicians
+    if allow_actions and status == "pending" and role == "Junior Technician":
+        st.info("View only — approval requires Fleet Manager or Senior Technician.")
+
     # Action buttons (for pending cases)
-    if allow_actions and status == "pending":
+    if allow_actions and status == "pending" and role != "Junior Technician":
         st.markdown("---")
         reviewer_name = st.text_input(
             "Your name",

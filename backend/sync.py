@@ -6,6 +6,7 @@ Replace _push_* functions with real Supabase calls when ready.
 """
 
 import sqlite3
+import socket
 import os
 from datetime import datetime
 
@@ -13,6 +14,15 @@ _DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 _CLOUD_DB = os.path.join(_DATA_DIR, "cloud.db")
 _DASHBOARD_DB = os.path.join(_DATA_DIR, "dashboard.db")
 _TRACE_AI_DB = os.path.join(_DATA_DIR, "trace_ai.db")
+
+
+def check_connectivity(timeout=2):
+    """Check internet connectivity by reaching Google DNS. Fast and reliable."""
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=timeout)
+        return True
+    except OSError:
+        return False
 
 
 def init_cloud_db():
