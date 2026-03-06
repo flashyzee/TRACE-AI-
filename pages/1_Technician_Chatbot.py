@@ -2,6 +2,8 @@ import streamlit as st
 import time
 import random
 import os
+import json
+import sqlite3
 from datetime import datetime
 from PIL import Image
 
@@ -589,7 +591,71 @@ def get_current_confidence():
 
 def generate_session_id():
     """Generate a unique session ID for the backend workflow."""
-    return f"SESSION-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
+    return f"SESS-{datetime.now().strftime('%Y')}-{random.randint(1000, 9999)}"
+
+
+# ── Dashboard DB path (shared with Approval Dashboard) ──────────────────────
+_DASHBOARD_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dashboard.db")
+
+
+def save_case_to_dashboard(
+    session_id, fault_code, fault_name, vehicle_id, mileage, symptoms,
+    top_cause, confidence, updated_confidence, estimated_cost, urgency,
+    escalation_reason, evidence_answers, status, repair_steps=None,
+):
+    """Insert a diagnosed case into the dashboard database so it appears in Approval Dashboard."""
+    os.makedirs(os.path.dirname(_DASHBOARD_DB), exist_ok=True)
+    conn = sqlite3.connect(_DASHBOARD_DB)
+    # Ensure the table exists (in case dashboard hasn't been visited yet)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            fault_code TEXT NOT NULL,
+            fault_name TEXT,
+            vehicle_id TEXT,
+            mileage INTEGER,
+            symptoms TEXT,
+            top_cause TEXT,
+            confidence REAL,
+            updated_confidence REAL,
+            estimated_cost INTEGER,
+            urgency TEXT,
+            escalation_reason TEXT,
+            evidence_json TEXT,
+            status TEXT DEFAULT 'pending',
+            approved_by TEXT,
+            reviewer_notes TEXT,
+            repair_steps_json TEXT,
+            created_at TEXT,
+            decided_at TEXT,
+            sync_status TEXT DEFAULT 'pending'
+        )
+        """
+    )
+    try:
+        conn.execute(
+            """
+            INSERT INTO cases (
+                session_id, fault_code, fault_name, vehicle_id, mileage, symptoms,
+                top_cause, confidence, updated_confidence, estimated_cost, urgency,
+                escalation_reason, evidence_json, status, repair_steps_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session_id, fault_code, fault_name, vehicle_id, mileage, symptoms,
+                top_cause, confidence, updated_confidence, estimated_cost, urgency,
+                escalation_reason, json.dumps(evidence_answers),
+                status, json.dumps(repair_steps) if repair_steps else None,
+                datetime.now().isoformat(),
+            ),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # session_id already exists, skip duplicate
+    finally:
+        conn.close()
 
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
@@ -1150,6 +1216,39 @@ if st.session_state.chat_phase == "result" and not any(
     summary += (
         "You can view the case status on the <b>Approval Dashboard</b> page. "
         "Thank you for providing the evidence!"
+    )
+
+    # ── Save case to dashboard database ──────────────────────────────────────
+    fc = st.session_state.get("fault_code", "")
+    fc_info = FAULT_CODES.get(fc, {})
+    case_status = "pending" if (safety_flag or needs_escalation) else "approved"
+
+    # Build escalation reason string for the dashboard
+    if not escalation_reason and (safety_flag or needs_escalation):
+        reason_parts = []
+        if safety_flag:
+            reason_parts.append("Safety risk: visible fuel leak detected")
+        if updated_conf < 0.70:
+            reason_parts.append(f"Confidence below 70% ({updated_conf:.0%})")
+        if top.get("estimated_cost_usd", 0) > 500:
+            reason_parts.append(f"Estimated cost exceeds $500")
+        escalation_reason = ". ".join(reason_parts) if reason_parts else "Escalated for review"
+
+    save_case_to_dashboard(
+        session_id=st.session_state.get("session_id", generate_session_id()),
+        fault_code=fc,
+        fault_name=fc_info.get("name", "Unknown"),
+        vehicle_id=st.session_state.get("vehicle_id", "UNIT-0000"),
+        mileage=st.session_state.get("mileage", 0),
+        symptoms=st.session_state.get("symptoms", ""),
+        top_cause=top.get("cause", "Unknown"),
+        confidence=base_conf,
+        updated_confidence=updated_conf,
+        estimated_cost=top.get("estimated_cost_usd", 0),
+        urgency=top.get("urgency", "medium"),
+        escalation_reason=escalation_reason if case_status == "pending" else "",
+        evidence_answers=answers,
+        status=case_status,
     )
 
     add_bot_message(summary)
