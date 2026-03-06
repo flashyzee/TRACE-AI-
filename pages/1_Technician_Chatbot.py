@@ -686,6 +686,28 @@ with st.sidebar:
 
     st.divider()
 
+    # Logged-in user badge
+    ROLE_NAMES = {
+        "Fleet Manager": "Zion Adedipe",
+        "Senior Technician": "Nhi Truong",
+        "Junior Technician": "Lilian Campbell",
+    }
+    role = st.session_state.get("global_role", "Junior Technician")
+    user_name = ROLE_NAMES.get(role, "Lilian")
+    st.markdown(
+        f'<div style="background:#16213E; border:1px solid #2D3A5C; border-radius:10px; '
+        f'padding:0.6rem 0.8rem; margin-bottom:0.3rem;">'
+        f'<div style="font-size:0.72rem; color:#9CA3AF; text-transform:uppercase; '
+        f'letter-spacing:0.05em; font-weight:600;">Logged in as</div>'
+        f'<div style="font-size:0.95rem; font-weight:700; color:#F59E0B; margin-top:0.15rem;">'
+        f'{user_name}</div>'
+        f'<div style="font-size:0.78rem; color:#9CA3AF;">{role}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+
     # Vehicle Info Form
     st.markdown("### Vehicle Info")
     st.caption("Fill in details before starting the chat.")
