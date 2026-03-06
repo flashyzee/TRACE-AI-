@@ -528,6 +528,16 @@ st.markdown(
         .breadcrumb {
             font-size: 0.75rem;
         }
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none;
+        }
+        .stMainBlockContainer {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     }
     </style>
     """,
@@ -785,38 +795,6 @@ with st.sidebar:
         f'</div>',
         unsafe_allow_html=True,
     )
-
-    st.divider()
-
-    # Vehicle Info Form
-    st.markdown("### Vehicle Info")
-    st.caption("Fill in details before starting the chat.")
-
-    with st.form("vehicle_form"):
-        fault_code = st.selectbox(
-            "Fault Code (DTC)",
-            options=[""] + list(FAULT_CODES.keys()),
-            format_func=lambda x: f"{x}  |  {FAULT_CODES[x]['name']}" if x else "Select a fault code...",
-        )
-        vehicle_id = st.text_input("Vehicle / Unit ID", placeholder="e.g. UNIT-4471")
-        mileage = st.number_input("Current Mileage", min_value=0, step=1000, value=0)
-        symptoms = st.text_area(
-            "Initial Symptoms",
-            placeholder="e.g. rough idle, black smoke, loss of power under load",
-        )
-        submitted = st.form_submit_button("Start Diagnosis", type="primary", use_container_width=True)
-
-    if submitted and fault_code:
-        st.session_state.sidebar_submitted = True
-        st.session_state.fault_code = fault_code
-        st.session_state.vehicle_id = vehicle_id or "UNIT-0000"
-        st.session_state.mileage = mileage
-        st.session_state.symptoms = symptoms or "No symptoms described"
-        st.session_state.chat_phase = "triage"
-        st.session_state.chat_messages = []
-        st.session_state.current_question_idx = 0
-        st.session_state.evidence_answers = {}
-        st.rerun()
 
     # Session info card (only when active)
     if st.session_state.chat_phase != "idle":
@@ -1334,7 +1312,7 @@ if st.session_state.chat_phase == "result" and not any(
     summary = "<b>Evidence Summary &amp; Updated Diagnosis</b><br><br>"
     for q in questions:
         ans = answers.get(q["id"], "N/A")
-        summary += f"&bull; {q['question'][:50]}... &mdash; <b>{ans}</b><br>"
+        summary += f"&bull; {q['question'][:50]}... : <b>{ans}</b><br>"
 
     uc_color = _conf_color_summary(updated_conf)
     bc_color = _conf_color_summary(base_conf)
@@ -1474,19 +1452,46 @@ if st.session_state.chat_phase == "done":
 elif st.session_state.chat_phase == "idle":
     st.markdown(
         """
-        <div style="text-align:center; padding:3rem 1rem; animation: fadeInUp 0.5s ease-out;">
-            <div style="height:1rem;"></div>
-            <div style="font-size:1.1rem; color:#E5E7EB; font-weight:600; margin-bottom:0.5rem;">
+        <div style="text-align:center; padding:1.5rem 1rem 0.5rem; animation: fadeInUp 0.5s ease-out;">
+            <div style="font-size:1.1rem; color:#E5E7EB; font-weight:600; margin-bottom:0.3rem;">
                 Ready to Diagnose
             </div>
             <div style="font-size:0.9rem; color:#9CA3AF; max-width:400px; margin:0 auto;">
-                Fill in the <strong style="color:#F59E0B">Vehicle Info</strong> form in the sidebar
-                to begin a new diagnosis session.
+                Fill in the vehicle details below to begin a new diagnosis session.
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    # Vehicle Info Form (centered on main page)
+    form_col1, form_col2, form_col3 = st.columns([1, 2, 1])
+    with form_col2:
+        with st.form("vehicle_form"):
+            fault_code = st.selectbox(
+                "Fault Code (DTC)",
+                options=[""] + list(FAULT_CODES.keys()),
+                format_func=lambda x: f"{x}  |  {FAULT_CODES[x]['name']}" if x else "Select a fault code...",
+            )
+            vehicle_id = st.text_input("Vehicle / Unit ID", placeholder="e.g. UNIT-4471")
+            mileage = st.number_input("Current Mileage", min_value=0, step=1000, value=0)
+            symptoms = st.text_area(
+                "Initial Symptoms",
+                placeholder="e.g. rough idle, black smoke, loss of power under load",
+            )
+            submitted = st.form_submit_button("Start Diagnosis", type="primary", use_container_width=True)
+
+        if submitted and fault_code:
+            st.session_state.sidebar_submitted = True
+            st.session_state.fault_code = fault_code
+            st.session_state.vehicle_id = vehicle_id or "UNIT-0000"
+            st.session_state.mileage = mileage
+            st.session_state.symptoms = symptoms or "No symptoms described"
+            st.session_state.chat_phase = "triage"
+            st.session_state.chat_messages = []
+            st.session_state.current_question_idx = 0
+            st.session_state.evidence_answers = {}
+            st.rerun()
 elif st.session_state.chat_phase == "evidence":
     user_input = st.chat_input("Or type your answer...")
     if user_input:

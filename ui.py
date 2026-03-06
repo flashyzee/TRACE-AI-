@@ -485,12 +485,14 @@ st.markdown(
         <img src="data:image/png;base64,{_logo_b64}" alt="TRACE AI Logo"
              style="width:150px; margin-bottom:1rem; animation: fadeInUp 0.6s ease-out;">
         <div class="hero-title">TRACE AI</div>
-        <div class="hero-acronym">Transparent Repair Automation with Compliance Engine</div>
+        <div class="hero-acronym">Triage, Report, Action, Capture and Escalate</div>
         <div class="hero-tagline">Intelligent Diesel Diagnostics for Modern Fleet Maintenance</div>
         <div class="hero-desc">
-            TRACE AI empowers field service engineers with real time, AI powered fault
-            triage, guided evidence collection, and compliant repair workflows.
-            Designed for offline first reliability with seamless cloud sync.
+            A multi-agent AI system that helps junior diesel field technicians
+            diagnose fault codes safely and efficiently. It combines open-source
+            LLMs with a human-in-the-loop approval workflow so that dangerous,
+            costly, or uncertain repairs are always reviewed by a senior engineer
+            before execution.
         </div>
     </div>
     """,
@@ -690,7 +692,7 @@ st.markdown(
 st.markdown(
     """
     <div class="footer">
-        <div class="footer-brand">TRACE AI  ·  Transparent Repair Automation with Compliance Engine</div>
+        <div class="footer-brand">TRACE AI  ·  Triage, Report, Action, Capture and Escalate</div>
         <div class="footer-models">
             <span class="model-badge">Llama 3.1 (Triage)</span>
             <span class="model-badge">Mistral 7B (Fallback)</span>
