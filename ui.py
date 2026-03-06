@@ -1,8 +1,45 @@
 import streamlit as st
-import sys, os
+import sys, os, sqlite3
 from PIL import Image
 
 _logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png"))
+
+# DB paths
+_DASHBOARD_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dashboard.db")
+_TRACE_AI_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "trace_ai.db")
+
+
+def _get_kpi_stats():
+    """Query SQLite databases for live KPI numbers."""
+    stats = {
+        "resolved": 0,
+        "pending": 0,
+        "avg_confidence": 0,
+        "cases_today": 0,
+    }
+    try:
+        con = sqlite3.connect(_DASHBOARD_DB)
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM cases WHERE status != 'pending'")
+        stats["resolved"] = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM cases WHERE status = 'pending'")
+        stats["pending"] = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM cases WHERE DATE(created_at) = DATE('now')")
+        stats["cases_today"] = cur.fetchone()[0]
+        con.close()
+    except Exception:
+        pass
+    try:
+        con = sqlite3.connect(_TRACE_AI_DB)
+        cur = con.cursor()
+        cur.execute("SELECT AVG(confidence) FROM decision_log")
+        val = cur.fetchone()[0]
+        if val is not None:
+            stats["avg_confidence"] = round(val * 100) if val <= 1 else round(val)
+        con.close()
+    except Exception:
+        pass
+    return stats
 
 st.set_page_config(
     page_title="TRACE AI",
@@ -403,6 +440,27 @@ st.markdown(
         background: linear-gradient(90deg, #F59E0B, #EF4444);
         border-radius: 2px;
     }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .hero-title { font-size: 2rem; }
+        .hero-tagline { font-size: 1.05rem; }
+        .hero-desc { font-size: 0.88rem; }
+        .hero-container { padding: 1.5rem 0.5rem 1rem; }
+        .kpi-card { padding: 1rem 0.8rem; }
+        .kpi-value { font-size: 1.5rem; }
+        .wf-step { min-width: 80px; padding: 0.6rem 0.4rem; }
+        .wf-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+        .wf-label { font-size: 0.7rem; }
+        .wf-sub { font-size: 0.6rem; max-width: 75px; }
+        .wf-arrow { font-size: 0.9rem; }
+        .nav-card { padding: 1.2rem; }
+        .nav-card h3 { font-size: 1rem; }
+        .nav-card p { font-size: 0.82rem; }
+        .steps-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; }
+        .step-card { padding: 1rem 0.8rem; }
+        .section-title { font-size: 1.1rem; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -440,23 +498,26 @@ st.markdown(
 )
 
 # ── Live KPI Metrics ────────────────────────────────────────────────────────
+_kpi = _get_kpi_stats()
+
 st.markdown(
     '<div class="section-title"><div class="section-title-bar"></div> Live Performance</div>',
     unsafe_allow_html=True,
 )
 
+# MTTR Reduction, First Time Fix Rate, and Est. Savings are demo baseline values
 st.markdown(
-    """
+    f"""
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:1rem;">
         <div class="kpi-card" style="animation-delay:0.1s;">
-            <div class="kpi-value">127</div>
+            <div class="kpi-value">{_kpi["resolved"]}</div>
             <div class="kpi-label">Cases Resolved</div>
-            <div class="kpi-delta">+12% this week</div>
+            <div class="kpi-delta">from database</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.2s;">
-            <div class="kpi-value">87%</div>
+            <div class="kpi-value">{_kpi["avg_confidence"]}%</div>
             <div class="kpi-label">Avg Confidence</div>
-            <div class="kpi-delta">+3% from baseline</div>
+            <div class="kpi-delta">from decision log</div>
         </div>
         <div class="kpi-card" style="animation-delay:0.3s;">
             <div class="kpi-value">42%</div>
@@ -632,7 +693,7 @@ st.markdown(
         <div class="footer-brand">TRACE AI  ·  Transparent Repair Automation with Compliance Engine</div>
         <div class="footer-models">
             <span class="model-badge">Llama 3.1 (Triage)</span>
-            <span class="model-badge">Mistral 7B (Evidence)</span>
+            <span class="model-badge">Mistral 7B (Fallback)</span>
             <span class="model-badge">Offline First</span>
             <span class="model-badge">Cloud Sync</span>
         </div>
@@ -723,21 +784,22 @@ with st.sidebar:
     st.divider()
 
     # Quick stats
+    # Est. Savings is a demo baseline value
     st.markdown("**Quick Stats**")
     st.markdown(
-        """
+        f"""
         <div style="padding:0.3rem 0;">
             <div class="sidebar-stat">
                 <span class="sidebar-stat-label">Cases Today</span>
-                <span class="sidebar-stat-value">12</span>
+                <span class="sidebar-stat-value">{_kpi["cases_today"]}</span>
             </div>
             <div class="sidebar-stat">
                 <span class="sidebar-stat-label">Pending Review</span>
-                <span class="sidebar-stat-value">3</span>
+                <span class="sidebar-stat-value">{_kpi["pending"]}</span>
             </div>
             <div class="sidebar-stat">
                 <span class="sidebar-stat-label">Avg Confidence</span>
-                <span class="sidebar-stat-value">87%</span>
+                <span class="sidebar-stat-value">{_kpi["avg_confidence"]}%</span>
             </div>
             <div class="sidebar-stat">
                 <span class="sidebar-stat-label">Est. Savings</span>

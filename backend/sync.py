@@ -228,7 +228,7 @@ def reconcile_from_cloud():
             ).fetchone()
 
             if local_row is None:
-                # New record from cloud -- insert locally
+                # New record from cloud - insert locally
                 try:
                     local_dash.execute("""
                         INSERT INTO cases
@@ -253,7 +253,7 @@ def reconcile_from_cloud():
                 except Exception as e:
                     result["errors"].append(f"case insert {cr['session_id']}: {e}")
             else:
-                # Record exists locally -- last-write-wins by timestamp
+                # Record exists locally - last-write-wins by timestamp
                 lr = dict(local_row)
                 cloud_ts = cr.get("synced_at") or cr.get("decided_at") or cr.get("created_at") or ""
                 local_ts = lr.get("decided_at") or lr.get("created_at") or ""

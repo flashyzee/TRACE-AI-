@@ -1,56 +1,38 @@
 # utils/llm.py
 """
-Groq Cloud LLM connection with automatic fallback.
-Tries Llama 3.1 8B first, falls back to Mixtral 8x7B if unavailable.
-Uses the same open-source models previously run locally via Ollama,
-now hosted on Groq's cloud for deployment flexibility.
+Local LLM connection via Ollama with automatic model fallback.
+Tries Llama 3.1 8B first, falls back to Mistral 7B if unavailable.
+All inference runs locally — no data is sent to external APIs.
 """
 
-import os
-from pathlib import Path
-from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
 
-PRIMARY_MODEL = "llama-3.1-8b-instant"
-FALLBACK_MODEL = "mixtral-8x7b-32768"
-
-# Load .env file if it exists (for local development / Streamlit)
-_env_path = Path(__file__).resolve().parents[2] / ".env"
-if _env_path.exists():
-    for line in _env_path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, _, value = line.partition("=")
-            os.environ.setdefault(key.strip(), value.strip())
+PRIMARY_MODEL = "llama3.1"
+FALLBACK_MODEL = "mistral"
 
 
-def get_llm() -> tuple[ChatGroq, str]:
+def get_llm() -> tuple[ChatOllama, str]:
     """
     Returns (llm_instance, model_name_used).
-    Tries Llama 3.1 first, falls back to Mixtral if unavailable.
-    Requires GROQ_API_KEY environment variable or .env file.
+    Tries Llama 3.1 locally via Ollama first, falls back to Mistral 7B.
+    Requires Ollama to be running: ollama serve
     """
-    api_key = os.environ.get("GROQ_API_KEY")
-    # Also check Streamlit secrets (used on Streamlit Cloud)
-    if not api_key:
-        try:
-            import streamlit as st
-            api_key = st.secrets.get("GROQ_API_KEY")
-        except Exception:
-            pass
-    if not api_key:
-        raise RuntimeError(
-            "GROQ_API_KEY environment variable is not set. "
-            "Get a free key at https://console.groq.com/keys"
-        )
-
     try:
-        llm = ChatGroq(model=PRIMARY_MODEL, api_key=api_key, temperature=0)
+        llm = ChatOllama(model=PRIMARY_MODEL, temperature=0)
+        llm.invoke("ping")
         return llm, PRIMARY_MODEL
     except Exception:
-        try:
-            llm = ChatGroq(model=FALLBACK_MODEL, api_key=api_key, temperature=0)
-            return llm, FALLBACK_MODEL
-        except Exception as e:
-            raise RuntimeError(
-                f"No LLM available via Groq. Check your API key. Error: {e}"
-            )
+        pass
+
+    try:
+        llm = ChatOllama(model=FALLBACK_MODEL, temperature=0)
+        llm.invoke("ping")
+        return llm, FALLBACK_MODEL
+    except Exception as e:
+        raise RuntimeError(
+            "No LLM available. Make sure Ollama is running:\n"
+            "  ollama serve\n"
+            "  ollama pull llama3.1\n"
+            "  ollama pull mistral\n"
+            f"Error: {e}"
+        )

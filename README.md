@@ -30,14 +30,14 @@
 
 ## Problem Statement
 
-Junior field technicians working on heavy-duty diesel equipment face a steep learning curve. When a fault code appears, they must quickly diagnose the root cause, decide whether the repair is safe to attempt, and execute the fix (-) all while standing next to a truck in the field with limited connectivity.
+Junior field technicians working on heavy-duty diesel equipment face a steep learning curve. When a fault code appears, they must quickly diagnose the root cause, decide whether the repair is safe to attempt, and execute the fix - all while standing next to a truck in the field with limited connectivity.
 
 **The core challenges:**
 
-- **Long Mean Time to Repair (MTTR)** (-) Inexperienced techs spend excessive time researching fault codes and repair procedures, leading to extended vehicle downtime.
-- **Low First-Time Fix Rate (FTFR)** (-) Without guided diagnosis, junior techs often misdiagnose issues, requiring repeat visits and increasing costs.
-- **Tribal Knowledge Gap** (-) Senior engineers hold decades of diagnostic expertise in their heads. When they are unavailable, junior techs are left without guidance.
-- **Safety Risk** (-) Attempting high-risk repairs (fuel system, electrical, structural) without proper oversight can lead to injury, equipment damage, or warranty violations.
+- **Long Mean Time to Repair (MTTR):**Inexperienced techs spend excessive time researching fault codes and repair procedures, leading to extended vehicle downtime.
+- **Low First-Time Fix Rate (FTFR):**Without guided diagnosis, junior techs often misdiagnose issues, requiring repeat visits and increasing costs.
+- **Tribal Knowledge Gap:**Senior engineers hold decades of diagnostic expertise in their heads. When they are unavailable, junior techs are left without guidance.
+- **Safety Risk:**Attempting high-risk repairs (fuel system, electrical, structural) without proper oversight can lead to injury, equipment damage, or warranty violations.
 
 TRACE addresses these challenges by putting an AI copilot in the hands of every field technician, backed by a structured escalation path that keeps senior engineers in the loop for critical decisions.
 
@@ -45,12 +45,13 @@ TRACE addresses these challenges by putting an AI copilot in the hands of every 
 
 ## Key Features
 
-- **Multi-Agent Orchestration** (-) Three specialized agents (Triage, Evidence, Escalation) coordinated by a LangGraph state machine. Each agent handles a distinct phase of the diagnostic workflow.
-- **Open-Source LLMs** (-) Llama 3.1 8B serves as the primary diagnosis model; Mistral 7B acts as an automatic fallback. Both run locally via Ollama with zero external API calls.
-- **Human-in-the-Loop Approval** (-) The system automatically pauses and escalates to a senior engineer when confidence is below 70%, estimated cost exceeds $500, or a safety risk is detected.
-- **Offline-First Design** (-) All inference and data storage run locally on the technician's device. When connectivity returns, completed sessions sync to the cloud automatically.
-- **Full Audit Trail** (-) Every AI decision is logged with inputs, outputs, confidence scores, timestamps, and approver information. A dedicated Decision Audit page provides full traceability.
-- **Field-Ready Interface** (-) Streamlit-based UI with a conversational chatbot for technicians, a back-office approval dashboard for engineers, and a decision audit viewer for compliance.
+- **Multi-Agent Orchestration:**Three specialized agents (Triage, Evidence, Escalation) coordinated by a LangGraph state machine. Each agent handles a distinct phase of the diagnostic workflow.
+- **Open-Source LLMs:**Llama 3.1 8B serves as the primary diagnosis model; Mistral 7B acts as an automatic fallback. Both run locally via Ollama with zero external API calls.
+- **Human-in-the-Loop Approval:**The system automatically pauses and escalates to a senior engineer when confidence is below 70%, estimated cost exceeds $500, or a safety risk is detected.
+- **Offline-First Design:**All inference and data storage run locally on the technician's device. When connectivity returns, completed sessions sync to the cloud automatically.
+- **Full Audit Trail:**Every AI decision is logged with inputs, outputs, confidence scores, timestamps, and approver information. A dedicated Decision Audit page provides full traceability.
+- **Field-Ready Interface:**Mobile-responsive Streamlit UI with a conversational chatbot for technicians, a back-office approval dashboard for engineers, and a decision audit viewer for compliance.
+- **Live KPI Dashboard:**Homepage displays real-time metrics pulled from the local database, including resolved cases, average confidence, and pending reviews.
 
 ---
 
@@ -85,7 +86,7 @@ TRACE addresses these challenges by putting an AI copilot in the hands of every 
                                                      +------------------------------------+
 ```
 
-**Flow:** Tech enters a fault code and symptoms in the chatbot. The Triage Agent diagnoses the top 3 root causes using the LLM. The Evidence Agent asks structured follow-up questions and adjusts confidence scores. The Escalation Agent evaluates safety, cost, and confidence thresholds (-) auto-approving low-risk repairs or routing to the senior engineer's Approval Dashboard. Once approved, the tech receives step-by-step repair instructions. Every decision is logged to the audit trail.
+**Flow:** Tech enters a fault code and symptoms in the chatbot. The Triage Agent diagnoses the top 3 root causes using the LLM. The Evidence Agent asks structured follow-up questions and adjusts confidence scores. The Escalation Agent evaluates safety, cost, and confidence thresholds - auto-approving low-risk repairs or routing to the senior engineer's Approval Dashboard. Once approved, the tech receives step-by-step repair instructions. Every decision is logged to the audit trail.
 
 ---
 
@@ -108,7 +109,7 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 # 3. Install Python dependencies
-pip install -r Trace-app/requirements.txt
+pip install -r requirements.txt
 
 # 4. Start Ollama and pull models (in a separate terminal)
 ollama serve
@@ -137,12 +138,12 @@ uvicorn backend.main:app --reload
 
 When you run through the demo scenario (fault code P0191), the pipeline executes this flow:
 
-1. **Evidence Questions** (-) The chatbot presents 4 structured follow-up questions for P0191.
-2. **Triage Diagnosis** (-) The LLM diagnoses the top 3 root causes with confidence scores (~10-30 sec).
-3. **Evidence Processing** (-) Confidence scores are adjusted based on the technician's physical observations.
-4. **Escalation Check** (-) The system evaluates safety, cost, and confidence thresholds.
-5. **Human Approval** (-) If escalated, the senior engineer reviews and approves or rejects the repair.
-6. **Repair Instructions** (-) The technician receives step-by-step instructions for the approved repair.
+1. **Evidence Questions:** The chatbot presents 4 structured follow-up questions for P0191.
+2. **Triage Diagnosis:** The LLM diagnoses the top 3 root causes with confidence scores (~10-30 sec).
+3. **Evidence Processing:** Confidence scores are adjusted based on the technician's physical observations.
+4. **Escalation Check:** The system evaluates safety, cost, and confidence thresholds.
+5. **Human Approval:** If escalated, the senior engineer reviews and approves or rejects the repair.
+6. **Repair Instructions:** The technician receives step-by-step instructions for the approved repair.
 
 You can also run the end-to-end pipeline directly:
 
@@ -219,7 +220,7 @@ TRACE-AI-/
 | Backend API | FastAPI + Uvicorn | MIT |
 | Frontend | Streamlit (multi-page app) | Apache 2.0 |
 | Local Database | SQLite | Public Domain |
-| Cloud Sync | Supabase | Apache 2.0 |
+| Cloud Sync (Simulated) | SQLite (local cloud.db) | Public Domain |
 | State Validation | Pydantic | MIT |
 
 ---
@@ -270,12 +271,12 @@ For full details on data sourcing and compliance, see [DATA_PROVENANCE.md](DATA_
 
 | Name | Role |
 |------|------|
-| Nhi Truong | Technical Lead (-) architecture, backend, AI pipeline, and UI development |
-| Zion Adedipe | Technical Lead (-) infrastructure, integration, and system reliability |
-| Campbell Lilian | Strategy and Research (-) ideation, business analysis, and report preparation |
+| Nhi Truong | Technical Lead - architecture, backend, AI pipeline, and UI development |
+| Zion Adedipe | Technical Lead - infrastructure, integration, and system reliability |
+| Campbell Lilian | Strategy and Research - ideation, business analysis, and report preparation |
 
 ---
 
 ## License
 
-MIT License (-) see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.

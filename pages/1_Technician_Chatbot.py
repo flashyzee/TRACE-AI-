@@ -449,6 +449,86 @@ st.markdown(
         font-size: 0.75rem;
         color: #9CA3AF;
     }
+
+    /* ── Mobile Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+        .chat-container {
+            padding: 0.2rem 0;
+        }
+        .chat-bubble {
+            max-width: 95%;
+            padding: 0.7rem 0.9rem;
+            font-size: 0.85rem;
+            border-radius: 14px;
+        }
+        .chat-avatar {
+            width: 26px; height: 26px;
+            font-size: 0.75rem;
+        }
+        .chat-time {
+            font-size: 0.65rem;
+        }
+        .qr-container {
+            flex-direction: column;
+        }
+        .qr-container > * {
+            width: 100%;
+            text-align: center;
+        }
+        .evidence-card {
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border-radius: 10px;
+        }
+        .evidence-q-num {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+        }
+        .evidence-why {
+            font-size: 0.72rem;
+            padding: 0.3rem 0.5rem;
+        }
+        .cause-card {
+            padding: 0.7rem;
+        }
+        .page-header-title {
+            font-size: 1.15rem;
+        }
+        .page-header-badge {
+            font-size: 0.68rem;
+            padding: 0.15rem 0.6rem;
+        }
+        .session-card {
+            padding: 0.7rem;
+        }
+        .session-field {
+            font-size: 0.78rem;
+        }
+        .gauge-container {
+            padding: 0.7rem;
+        }
+        .gauge-value {
+            font-size: 1.5rem;
+        }
+        .progress-tracker {
+            padding: 0.4rem 0;
+            margin: 0.5rem 0;
+        }
+        .pt-dot {
+            width: 22px; height: 22px;
+            font-size: 0.65rem;
+        }
+        .pt-label {
+            font-size: 0.6rem;
+        }
+        .offline-banner, .online-banner {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.8rem;
+        }
+        .breadcrumb {
+            font-size: 0.75rem;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -869,7 +949,7 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
-    st.caption("Powered by Llama 3.1 on Groq Cloud.")
+    st.caption("Powered by Llama 3.1 via Ollama (local inference).")
 
 
 
