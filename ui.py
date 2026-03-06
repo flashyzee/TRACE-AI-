@@ -30,9 +30,9 @@ def _get_kpi_stats():
     except Exception:
         pass
     try:
-        con = sqlite3.connect(_TRACE_AI_DB)
+        con = sqlite3.connect(_DASHBOARD_DB)
         cur = con.cursor()
-        cur.execute("SELECT AVG(confidence) FROM decision_log")
+        cur.execute("SELECT AVG(COALESCE(updated_confidence, confidence)) FROM cases")
         val = cur.fetchone()[0]
         if val is not None:
             stats["avg_confidence"] = round(val * 100) if val <= 1 else round(val)

@@ -776,6 +776,21 @@ with st.sidebar:
 
     st.divider()
 
+    # New Chat button
+    if st.session_state.chat_phase != "idle":
+        if st.button("+ New Chat", use_container_width=True):
+            for key in [
+                "chat_messages", "chat_phase", "current_question_idx",
+                "evidence_answers", "sidebar_submitted", "fault_code",
+                "vehicle_id", "mileage", "symptoms", "triage_data",
+                "active_evidence_questions", "session_id",
+                "backend_available", "backend_confidence",
+            ]:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+        st.divider()
+
     # Logged-in user badge
     ROLE_NAMES = {
         "Fleet Manager": "Zion Adedipe",
