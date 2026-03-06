@@ -2,10 +2,14 @@ import streamlit as st
 import time
 import random
 import os
+import sys
 import json
 import sqlite3
 from datetime import datetime
 from PIL import Image
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from backend.logging_config import audit_log
 
 _logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logo.png"))
 st.set_page_config(page_title="TRACE AI Chatbot", page_icon=_logo, layout="wide")
@@ -1028,6 +1032,31 @@ if st.session_state.chat_phase == "triage" and not any(
         )
         add_bot_message(triage_text)
         st.session_state.triage_data = results
+
+        # Audit: log triage
+        audit_log({
+            "log_id": f"LOG-{session_id}-001",
+            "session_id": session_id,
+            "agent_id": "triage_agent",
+            "action": "initial_triage",
+            "fault_code": fc,
+            "inputs": {
+                "fault_code": fc,
+                "vehicle_id": st.session_state.vehicle_id,
+                "mileage": st.session_state.mileage,
+                "symptoms": st.session_state.symptoms,
+            },
+            "output": {
+                "top_causes": [
+                    {"cause": r["cause"], "confidence": r["confidence"]}
+                    for r in results[:3]
+                ],
+                "recommended_action": "Proceed to evidence collection",
+            },
+            "confidence": results[0]["confidence"],
+            "human_approved": None,
+            "model_used": "llama3.1" if st.session_state.get("backend_available") else "mock",
+        })
     else:
         add_bot_message(
             f"I don't have specialized triage data for <b>{fc}</b> yet. "
@@ -1053,7 +1082,7 @@ if st.session_state.chat_phase == "triage" and not any(
     st.session_state.chat_phase = "evidence"
     st.rerun()
 
-# ── Phase: Evidence collection (question by question) ────────────────────────
+# Phase: Evidence collection (question by question) 
 if st.session_state.chat_phase == "evidence":
     questions = st.session_state.get("active_evidence_questions", EVIDENCE_QUESTIONS)
     idx = st.session_state.current_question_idx
@@ -1097,7 +1126,7 @@ for msg in st.session_state.chat_messages:
             unsafe_allow_html=True,
         )
 
-# ── Quick reply buttons (evidence phase) ─────────────────────────────────────
+# Quick reply buttons (evidence phase) 
 if st.session_state.chat_phase == "evidence":
     questions = st.session_state.get("active_evidence_questions", EVIDENCE_QUESTIONS)
     idx = st.session_state.current_question_idx
@@ -1124,13 +1153,35 @@ if st.session_state.chat_phase == "evidence":
                 if st.button(reply, key=f"qr_{idx}_{i}", use_container_width=True):
                     add_user_message(reply)
                     st.session_state.evidence_answers[q["id"]] = reply
+
+                    # ── Audit: log evidence answer ───────────────────────
+                    _sid = st.session_state.get("session_id", "")
+                    audit_log({
+                        "log_id": f"LOG-{_sid}-EV{idx+1}",
+                        "session_id": _sid,
+                        "agent_id": "evidence_agent",
+                        "action": f"evidence_question_{idx+1}",
+                        "fault_code": st.session_state.get("fault_code", ""),
+                        "inputs": {
+                            "question_id": q["id"],
+                            "question": q["question"],
+                            "rationale": q["why_we_ask"],
+                        },
+                        "output": {
+                            "technician_response": reply,
+                        },
+                        "confidence": get_current_confidence(),
+                        "human_approved": None,
+                        "model_used": None,
+                    })
+
                     st.session_state.current_question_idx += 1
 
                     if st.session_state.current_question_idx >= len(questions):
                         st.session_state.chat_phase = "result"
                     st.rerun()
 
-# ── Phase: Result summary ───────────────────────────────────────────────────
+# Phase: Result summary 
 if st.session_state.chat_phase == "result" and not any(
     "Evidence Summary" in m.get("content", "") for m in st.session_state.chat_messages
 ):
@@ -1218,7 +1269,7 @@ if st.session_state.chat_phase == "result" and not any(
         "Thank you for providing the evidence!"
     )
 
-    # ── Save case to dashboard database ──────────────────────────────────────
+    # Save case to dashboard database 
     fc = st.session_state.get("fault_code", "")
     fc_info = FAULT_CODES.get(fc, {})
     case_status = "pending" if (safety_flag or needs_escalation) else "approved"
@@ -1234,8 +1285,10 @@ if st.session_state.chat_phase == "result" and not any(
             reason_parts.append(f"Estimated cost exceeds $500")
         escalation_reason = ". ".join(reason_parts) if reason_parts else "Escalated for review"
 
+    _sid = st.session_state.get("session_id", generate_session_id())
+
     save_case_to_dashboard(
-        session_id=st.session_state.get("session_id", generate_session_id()),
+        session_id=_sid,
         fault_code=fc,
         fault_name=fc_info.get("name", "Unknown"),
         vehicle_id=st.session_state.get("vehicle_id", "UNIT-0000"),
@@ -1251,11 +1304,61 @@ if st.session_state.chat_phase == "result" and not any(
         status=case_status,
     )
 
+    # ── Audit: log confidence update ─────────────────────────────────────
+    audit_log({
+        "log_id": f"LOG-{_sid}-CONF",
+        "session_id": _sid,
+        "agent_id": "evidence_agent",
+        "action": "confidence_update",
+        "fault_code": fc,
+        "inputs": {
+            "initial_confidence": base_conf,
+            "evidence_collected": answers,
+        },
+        "output": {
+            "updated_confidence": updated_conf,
+            "confidence_change": f"+{updated_conf - base_conf:.2f}",
+            "evidence_summary": f"Evidence collected across {len(answers)} questions.",
+        },
+        "confidence": updated_conf,
+        "human_approved": None,
+        "model_used": "llama3.1" if st.session_state.get("backend_available") else "mock",
+    })
+
+    # ── Audit: log escalation check ──────────────────────────────────────
+    audit_log({
+        "log_id": f"LOG-{_sid}-ESC",
+        "session_id": _sid,
+        "agent_id": "escalation_agent",
+        "action": "escalation_check",
+        "fault_code": fc,
+        "inputs": {
+            "confidence": updated_conf,
+            "top_cause": top.get("cause", "Unknown"),
+            "estimated_cost_usd": top.get("estimated_cost_usd", 0),
+            "safety_flag": safety_flag,
+        },
+        "output": {
+            "requires_human_approval": needs_escalation,
+            "escalation_reasons": [escalation_reason] if escalation_reason else [],
+            "auto_approved": not needs_escalation,
+            "assigned_to": "back_office_queue" if needs_escalation else "auto",
+        },
+        "confidence": updated_conf,
+        "human_approved": None if needs_escalation else True,
+        "model_used": None,
+        "metadata": {
+            "cost_threshold": 500,
+            "confidence_threshold": 0.70,
+            "case_status": case_status,
+        },
+    })
+
     add_bot_message(summary)
     st.session_state.chat_phase = "done"
     st.rerun()
 
-# ── Chat input (free text) ──────────────────────────────────────────────────
+# Chat input (free text) 
 if st.session_state.chat_phase == "done":
     user_input = st.chat_input("Type a follow up question...")
     if user_input:
@@ -1290,6 +1393,28 @@ elif st.session_state.chat_phase == "evidence":
             q = EVIDENCE_QUESTIONS[idx]
             add_user_message(user_input)
             st.session_state.evidence_answers[q["id"]] = user_input
+
+            # ── Audit: log typed evidence answer ─────────────────────
+            _sid = st.session_state.get("session_id", "")
+            audit_log({
+                "log_id": f"LOG-{_sid}-EV{idx+1}",
+                "session_id": _sid,
+                "agent_id": "evidence_agent",
+                "action": f"evidence_question_{idx+1}",
+                "fault_code": st.session_state.get("fault_code", ""),
+                "inputs": {
+                    "question_id": q["id"],
+                    "question": q["question"],
+                    "rationale": q["why_we_ask"],
+                },
+                "output": {
+                    "technician_response": user_input,
+                },
+                "confidence": get_current_confidence(),
+                "human_approved": None,
+                "model_used": None,
+            })
+
             st.session_state.current_question_idx += 1
             if st.session_state.current_question_idx >= len(EVIDENCE_QUESTIONS):
                 st.session_state.chat_phase = "result"

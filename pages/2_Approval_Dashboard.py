@@ -2,9 +2,13 @@ import streamlit as st
 import sqlite3
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 import random
 from PIL import Image
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from backend.logging_config import audit_log
 
 _logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logo.png"))
 st.set_page_config(page_title="TRACE AI Dashboard", page_icon=_logo, layout="wide")
@@ -1119,6 +1123,24 @@ def render_case_card(case, allow_actions=False):
                 update_case_decision(
                     case["session_id"], "approved", f"{name} ({role})", notes
                 )
+                audit_log({
+                    "log_id": f"LOG-{case['session_id']}-APPR",
+                    "session_id": case["session_id"],
+                    "agent_id": "human_reviewer",
+                    "action": "human_approval",
+                    "fault_code": case.get("fault_code", ""),
+                    "inputs": {
+                        "reviewer": f"{name} ({role})",
+                        "review_action": "approve",
+                    },
+                    "output": {
+                        "decision": "approved",
+                        "reviewer_notes": notes or "",
+                    },
+                    "confidence": case.get("updated_confidence") or case.get("confidence", 0),
+                    "human_approved": True,
+                    "model_used": None,
+                })
                 st.success("Case approved!")
                 st.rerun()
         with btn_col2:
@@ -1131,6 +1153,24 @@ def render_case_card(case, allow_actions=False):
                 update_case_decision(
                     case["session_id"], "rejected", f"{name} ({role})", notes
                 )
+                audit_log({
+                    "log_id": f"LOG-{case['session_id']}-REJ",
+                    "session_id": case["session_id"],
+                    "agent_id": "human_reviewer",
+                    "action": "human_rejection",
+                    "fault_code": case.get("fault_code", ""),
+                    "inputs": {
+                        "reviewer": f"{name} ({role})",
+                        "review_action": "reject",
+                    },
+                    "output": {
+                        "decision": "rejected",
+                        "reviewer_notes": notes or "",
+                    },
+                    "confidence": case.get("updated_confidence") or case.get("confidence", 0),
+                    "human_approved": False,
+                    "model_used": None,
+                })
                 st.error("Case rejected.")
                 st.rerun()
 

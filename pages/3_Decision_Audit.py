@@ -18,7 +18,7 @@ from backend.sync import check_connectivity
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 EXAMPLE_LOGS_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "Trace-app", "data", "example_logs.json"
+    os.path.dirname(os.path.abspath(__file__)), "..", "data", "example_logs.json"
 )
 
 # ── Custom CSS ───────────────────────────────────────────────────────────────
