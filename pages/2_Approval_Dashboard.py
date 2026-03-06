@@ -9,6 +9,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from backend.logging_config import audit_log
+from backend.agents.escalation_agent import generate_repair_steps
 
 _logo = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logo.png"))
 st.set_page_config(page_title="TRACE AI Dashboard", page_icon=_logo, layout="wide")
@@ -241,18 +242,29 @@ def get_cases(status_filter=None):
     return [dict(r) for r in rows]
 
 
-def update_case_decision(session_id, status, approved_by, notes):
+def update_case_decision(session_id, status, approved_by, notes, repair_steps_json=None):
     """Write an approval or rejection to the database."""
     conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """
-        UPDATE cases
-        SET status = ?, approved_by = ?, reviewer_notes = ?, decided_at = ?,
-            sync_status = 'pending'
-        WHERE session_id = ?
-        """,
-        (status, approved_by, notes, datetime.now().isoformat(), session_id),
-    )
+    if repair_steps_json is not None:
+        conn.execute(
+            """
+            UPDATE cases
+            SET status = ?, approved_by = ?, reviewer_notes = ?, decided_at = ?,
+                repair_steps_json = ?, sync_status = 'pending'
+            WHERE session_id = ?
+            """,
+            (status, approved_by, notes, datetime.now().isoformat(), repair_steps_json, session_id),
+        )
+    else:
+        conn.execute(
+            """
+            UPDATE cases
+            SET status = ?, approved_by = ?, reviewer_notes = ?, decided_at = ?,
+                sync_status = 'pending'
+            WHERE session_id = ?
+            """,
+            (status, approved_by, notes, datetime.now().isoformat(), session_id),
+        )
     conn.commit()
     conn.close()
 
@@ -1132,8 +1144,20 @@ def render_case_card(case, allow_actions=False):
                 use_container_width=True,
             ):
                 name = reviewer_name or f"{role}"
+                # Generate repair steps on approval
+                evidence_data = {}
+                try:
+                    evidence_data = json.loads(case.get("evidence_json", "{}"))
+                except (json.JSONDecodeError, TypeError):
+                    pass
+                steps = generate_repair_steps(
+                    case.get("fault_code", ""),
+                    case.get("top_cause", ""),
+                    evidence_data,
+                )
                 update_case_decision(
-                    case["session_id"], "approved", f"{name} ({role})", notes
+                    case["session_id"], "approved", f"{name} ({role})", notes,
+                    repair_steps_json=json.dumps(steps),
                 )
                 audit_log({
                     "log_id": f"LOG-{case['session_id']}-APPR",
